@@ -4,6 +4,7 @@ import { spots } from "@/data/spots";
 import { addCustomItemToItinerary, addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
 import { isSameLocation, isValidCoordinates, locationFromSpot, normalizeCustomLocation } from "@/lib/location";
 import { createRouteCache, getRoutePresentation, routeModeForElapsed } from "@/lib/routing";
+import { buildMapMarkers, isCustomLocatedItem } from "@/lib/map-markers";
 import { recommendSpotPlacement } from "@/lib/recommendation";
 import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
 import { crowdDetails } from "@/lib/crowd";
@@ -261,6 +262,24 @@ describe("経路の表示と全体集計", () => {
     expect(summary.distanceKm).toBeCloseTo(summary.day1.distanceKm + summary.day2.distanceKm);
     expect(summary.predictedDriveMinutes).toBe(summary.day1.predictedDriveMinutes + summary.day2.predictedDriveMinutes);
     expect(summary.stayMinutes).toBe(summary.day1.stayMinutes + summary.day2.stayMinutes);
+  });
+});
+
+describe("地図用のカスタム予定マーカー", () => {
+  const locatedCustom: ItineraryItem = { id: "custom-break", day: 1, type: "break", title: "仙石原カフェ", stayMinutes: 20, order: 2, latitude: 35.2648, longitude: 138.9988, location: { name: "仙石原カフェ", latitude: 35.2648, longitude: 138.9988, source: "manual" }, isCustom: true };
+  it("地点ありのカスタム予定だけを専用マーカーとして生成する", () => {
+    const withoutLocation: ItineraryItem = { ...locatedCustom, id: "without-location", latitude: undefined, longitude: undefined, location: undefined, order: 3 };
+    const markers = buildMapMarkers([clonePlan()[0], locatedCustom, withoutLocation], 1);
+    expect(markers).toHaveLength(2);
+    expect(markers.find((marker) => marker.item.id === "custom-break")).toMatchObject({ isCustom: true, mapOrder: 2, symbol: "☕", typeLabel: "休憩" });
+    expect(isCustomLocatedItem(withoutLocation)).toBe(false);
+  });
+
+  it("日付別に地図番号を振り直し、全体表示でも日付を保持する", () => {
+    const day2: ItineraryItem = { ...locatedCustom, id: "day2-meal", day: 2, type: "meal", title: "昼食", order: 1 };
+    const markers = buildMapMarkers([locatedCustom, day2], "all");
+    expect(markers.map((marker) => [marker.day, marker.mapOrder, marker.symbol])).toEqual([[1, 1, "☕"], [2, 1, "🍴"]]);
+    expect(buildMapMarkers([locatedCustom, day2], 2)).toHaveLength(1);
   });
 });
 

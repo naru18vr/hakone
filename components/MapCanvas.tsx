@@ -5,6 +5,7 @@ import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { createRouteCache, getRoutePresentation } from "@/lib/routing";
 import { isSameLocation } from "@/lib/location";
+import { buildMapMarkers } from "@/lib/map-markers";
 import { CustomLocation, ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
 type RouteModes = Record<1 | 2, RouteMode>;
@@ -32,6 +33,12 @@ const markerIcon = (color: string, number?: number | string) => L.divIcon({
   html: `<span class="map-pin" style="--pin:${color}"><i>${number ?? ""}</i></span>`,
   iconSize: [30, 30],
   iconAnchor: [15, 29],
+});
+const customMarkerIcon = (day: 1 | 2, number: number, symbol: string, label: string) => L.divIcon({
+  className: "",
+  html: `<span class="custom-map-pin day-${day}" role="img" aria-label="${label}"><i>${number}</i><b aria-hidden="true">${symbol}</b></span>`,
+  iconSize: [34, 34],
+  iconAnchor: [17, 32],
 });
 
 function FitToMarkers({ points }: { points: [number, number][] }) {
@@ -136,6 +143,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
     ...itinerary.filter((item) => item.latitude !== undefined && (routeDay === "all" || item.day === routeDay)).map((item) => [item.latitude!, item.longitude!] as [number, number]),
   ], [spots, itinerary, routeDay]);
   const visibleDays = routeDay === "all" ? [1, 2] as const : [routeDay] as const;
+  const mapMarkers = useMemo(() => buildMapMarkers(itinerary, routeDay), [itinerary, routeDay]);
   const visibleModes = visibleDays.map((day) => routeModes[day]);
   const routeStatus: RouteMode = visibleModes.some((mode) => mode === "loading") ? "loading" : visibleModes.some((mode) => mode === "slow") ? "slow" : visibleModes.every((mode) => mode === "routing") ? "routing" : "fallback";
   const routeModeText = routeStatus === "loading"
@@ -163,11 +171,11 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         {visibleDays.map((day) => routes[day]?.geometry && (
           <Polyline key={`route-${day}`} positions={routes[day]!.geometry} pathOptions={{ color: routeColors[day], weight: 5, opacity: 0.85, dashArray: routes[day]!.source === "fallback" ? "8 8" : undefined }} />
         ))}
-        {visibleDays.flatMap((day) => dayItems[day].map((item, index) => (
-          <Marker key={`sequence-${item.id}`} position={[item.latitude!, item.longitude!]} icon={markerIcon(routeColors[day], index + 1)}>
-            <Tooltip direction="bottom" offset={[0, 24]} opacity={1}>{day}日目 {index + 1}. {item.title}</Tooltip>
+        {mapMarkers.map((marker) => (
+          <Marker key={`sequence-${marker.item.id}`} position={[marker.item.latitude!, marker.item.longitude!]} icon={marker.isCustom ? customMarkerIcon(marker.day, marker.mapOrder, marker.symbol, marker.ariaLabel) : markerIcon(routeColors[marker.day], marker.mapOrder)}>
+            <Tooltip direction="bottom" offset={[0, 24]} opacity={1}>{marker.day}日目・地図{marker.mapOrder}番　{marker.typeLabel}：{marker.item.title}</Tooltip>
           </Marker>
-        )))}
+        ))}
         <LocationPickHandler enabled={locationPickMode} onPick={onLocationPickCandidate} />
         {locationPickCandidate && <Marker position={[locationPickCandidate.latitude, locationPickCandidate.longitude]} icon={markerIcon("#166cbe", "?")}><Tooltip permanent direction="top" offset={[0, -28]}>選択地点</Tooltip></Marker>}
       </MapContainer>
@@ -177,6 +185,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
           <div className="legend-row" key={level}><span className="legend-dot" style={{ background: crowdColor[level] }} />{label}</div>
         ))}
         <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
+        <div className="map-marker-legend"><strong>予定マーカー</strong><span>🍴 食事　☕ 休憩　▣ 宿泊</span><span>🚗 レンタカー　🚆 交通　★ 自由予定　✎ メモ</span><small>地図番号は、地図地点が設定された予定のみを対象にしています。地点なし予定は旅程にのみ表示されます。</small></div>
       </div>
       <div className={`route-mode ${routeStatus}`} aria-live="polite">
         {routeStatus === "loading" || routeStatus === "slow" ? routePresentation.label : routeModeText}
