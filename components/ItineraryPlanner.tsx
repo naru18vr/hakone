@@ -112,9 +112,9 @@ export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay
 
 function TravelLeg({ leg, departure, arrival, routeMode }: { leg: ReturnType<typeof estimateLeg>; departure: string; arrival: string; routeMode: RouteMode }) {
   const road = leg.predictedMinutes >= leg.baseMinutes * 1.2 ? "混雑" : leg.predictedMinutes > leg.baseMinutes ? "やや混雑" : "比較的スムーズ";
-  if (routeMode === "loading") return <div className="travel-leg loading" aria-live="polite"><CarFront size={14} /><div><strong>区間を再計算中…</strong><span>新しい旅程の道路経路・距離・所要時間を更新しています。</span></div></div>;
-  const estimateLabel = routeMode === "routing" ? "混雑予測込み" : "簡易推計";
-  return <div className={`travel-leg ${road} ${routeMode}`}><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着</strong><span>車 通常 {leg.baseMinutes}分 · {estimateLabel} {leg.predictedMinutes}分 · {leg.distanceKm.toFixed(1)}km</span>{routeMode === "fallback" && <em>道路経路未取得：直線距離を基にした推計</em>}</div><small>道路：{road}</small></div>;
+  if (routeMode === "loading") return <div className="travel-leg loading" aria-live="polite"><CarFront size={14} /><div><strong><b>仮</b> 経路を計算中…</strong><span>{departure} 出発 → {arrival} 到着予定。時刻と距離は仮表示です。</span></div></div>;
+  if (routeMode === "fallback") return <div className={`travel-leg ${road} fallback`} title="直線距離に山道係数を掛けた仮計算です"><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着予定 <b>仮</b></strong><span>簡易推計 {leg.predictedMinutes}分 · 約 {leg.distanceKm.toFixed(1)}km</span><em>道路経路は取得できませんでした。直線距離を基にした仮計算です。</em></div><small>道路：{road}</small></div>;
+  return <div className={`travel-leg ${road} routing`}><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着</strong><span>車 {leg.baseMinutes}分 · {leg.distanceKm.toFixed(1)}km · 混雑考慮 {leg.predictedMinutes}分</span><em>道路経路取得済み</em></div><small>道路：{road}</small></div>;
 }
 
 function SortableItem({ item, index, totalItems, startTime, arrivalOffset, onMove, onRemove, onMoveDay }: {

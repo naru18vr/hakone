@@ -6,6 +6,8 @@ export type AddSpotRequest = {
   placement: AddPlacement;
   targetId?: string;
   preferredTime?: string;
+  /** 同じ施設を別日に明示追加する場合だけ true にする。 */
+  allowDuplicate?: boolean;
 };
 
 const itemTypes: ItemType[] = ["spot", "meal", "hotel", "break", "start", "goal"];
@@ -22,7 +24,7 @@ export const normalizeItinerary = (items: ItineraryItem[]) => ([1, 2] as const).
   .map((item, index) => ({ ...item, order: index + 1 })));
 
 export const addSpotToItinerary = (itinerary: ItineraryItem[], spot: Spot, request: AddSpotRequest, id = `${spot.id}-${request.day}-${Date.now()}`) => {
-  if (itinerary.some((item) => item.type === "spot" && item.spotId === spot.id)) {
+  if (!request.allowDuplicate && itinerary.some((item) => item.type === "spot" && item.spotId === spot.id)) {
     return { itinerary, added: false, reason: "duplicate" as const };
   }
   const dayItems = itinerary.filter((item) => item.day === request.day).sort((a, b) => a.order - b.order);

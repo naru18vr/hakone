@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
-import { getRoutePresentation } from "@/lib/routing";
+import { createRouteCache, getRoutePresentation } from "@/lib/routing";
 import { ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
 type RouteModes = Record<1 | 2, RouteMode>;
@@ -19,6 +19,7 @@ type Props = {
 const crowdColor: Record<Spot["crowdLevel"], string> = { 1: "#1f9d6a", 2: "#e0a100", 3: "#e45b2b", 4: "#b52d36" };
 const routeColors = { 1: "#166cbe", 2: "#8b5cf6" } as const;
 const crowdLegend: Array<[Spot["crowdLevel"], string]> = [[1, "比較的空いている"], [2, "やや混雑"], [3, "混雑"], [4, "非常に混雑"]];
+const routeCache = createRouteCache();
 
 const markerIcon = (color: string, number?: number) => L.divIcon({
   className: "",
@@ -55,6 +56,8 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
           source: "fallback",
         };
         if (items.length < 2) return [day, fallback] as const;
+        const cached = routeCache.get(items);
+        if (cached) return [day, cached] as const;
         try {
           const baseUrl = (process.env.NEXT_PUBLIC_ROUTING_API_URL || "https://router.project-osrm.org").replace(/\/$/, "");
           const coordinates = items.map((item) => `${item.longitude},${item.latitude}`).join(";");
@@ -63,7 +66,9 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
           const data = await response.json();
           const route = data?.routes?.[0];
           if (!route?.geometry?.coordinates) throw new Error("route unavailable");
-          return [day, { geometry: route.geometry.coordinates.map(([longitude, latitude]: [number, number]) => [latitude, longitude]), source: "routing" }] as const;
+          const roadRoute: RouteResult = { geometry: route.geometry.coordinates.map(([longitude, latitude]: [number, number]) => [latitude, longitude]), source: "routing" };
+          routeCache.set(items, roadRoute);
+          return [day, roadRoute] as const;
         } catch (error) {
           if (controller.signal.aborted) throw error;
           return [day, fallback] as const;

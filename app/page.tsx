@@ -6,8 +6,9 @@ import { CalendarDays, CarFront, CheckCircle2, ChevronDown, CircleAlert, CloudRa
 import { hotelPoint, spots as baseSpots } from "@/data/spots";
 import { initialPlan, samplePlans } from "@/data/plans";
 import ItineraryPlanner from "@/components/ItineraryPlanner";
-import SpotDetail, { AddRequest } from "@/components/SpotDetail";
-import { addSpotToItinerary } from "@/lib/itinerary";
+import AddSpotDialog from "@/components/AddSpotDialog";
+import SpotDetail from "@/components/SpotDetail";
+import { AddSpotRequest, addSpotToItinerary } from "@/lib/itinerary";
 import { getRoutePresentation } from "@/lib/routing";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { airDistanceKm, assessStress, calcTripSummary, formatEndTime, getStressDescription, minutesToText } from "@/lib/trip";
@@ -38,6 +39,8 @@ export default function Home() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
   const [storageReady, setStorageReady] = useState(false);
+  const [addDialogSpot, setAddDialogSpot] = useState<Spot | undefined>();
+  const [distanceReference, setDistanceReference] = useState<"hotel" | "odawara" | "last" | "selected">("hotel");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -92,6 +95,12 @@ export default function Home() {
     return { ...spot, crowdLevel: Math.max(1, Math.min(4, spot.crowdLevel + noonBoost + weatherBoost + obonBoost)) as 1 | 2 | 3 | 4, crowdSource: "forecast" as const, crowdUpdatedAt: `8/12 ${visitTime}想定` };
   }), [crowdMode, visitTime, weather]);
 
+  const referencePoint = useMemo(() => {
+    if (distanceReference === "odawara") return baseSpots.find((spot) => spot.id === "odawara-station") ?? hotelPoint;
+    if (distanceReference === "selected" && selectedSpot) return selectedSpot;
+    if (distanceReference === "last") return [...itinerary].filter((item) => item.day === activeDay && item.latitude !== undefined).sort((a, b) => b.order - a.order)[0] ?? hotelPoint;
+    return hotelPoint;
+  }, [distanceReference, selectedSpot, itinerary, activeDay]);
   const visibleSpots = useMemo(() => spots.filter((spot) => {
     const textMatch = spot.name.includes(query) || spot.category.includes(query) || spot.tags.some((tag) => tag.includes(query));
     const filterMatch = activeFilters.every((filter) => {
@@ -125,16 +134,17 @@ export default function Home() {
     setRouteModes({ 1: "loading", 2: "loading" });
     setItinerary(next);
   };
-  const addSpot = (spot: Spot, request: AddRequest) => {
+  const addSpot = (spot: Spot, request: AddSpotRequest) => {
     const result = addSpotToItinerary(itinerary, spot, request);
     if (!result.added) {
-      setToast(`${spot.name}はすでに旅程へ追加済みです`);
+      setToast(`${spot.name}はすでに旅程へ追加済みです。別日に入れる場合は追加画面で明示してください。`);
       return;
     }
     updateItinerary(result.itinerary);
     setActiveDay(request.day);
     setRouteDay(request.day);
     setToast(`${spot.name}を8月${request.day === 1 ? "12" : "13"}日に追加しました`);
+    setAddDialogSpot(undefined);
   };
   const loadPlan = (plan: SamplePlan) => {
     updateItinerary(plan.itinerary.map((item) => ({ ...item })));
@@ -194,10 +204,11 @@ export default function Home() {
             <div className="filter-heading"><ListFilter size={15} /> 絞り込み</div>
             <div className="filter-chips">{primaryFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter === "雨天対応" ? "雨でもOK" : filter === "宿泊施設から近い" ? "宿から近い" : filter}</button>)}</div>
             <details className="advanced-filters"><summary>詳細条件</summary><div className="filter-chips">{advancedFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter}</button>)}</div></details>
-            <div className="spot-list">{visibleSpots.map((spot) => <button key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`} onClick={() => { setSelectedSpot(spot); setMobileSheetOpen(true); }}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small>{spot.category} · 目安 {spot.stayMinutes}分 · {crowdSourceLabel[spot.crowdSource]}</small></span><ChevronDown size={15} /></button>)}</div>
+            <div className="distance-reference" aria-label="観光地一覧の距離基準"><span>距離の基準</span>{(["hotel", "odawara", "last", "selected"] as const).map((key) => <button key={key} className={distanceReference === key ? "active" : ""} onClick={() => setDistanceReference(key)}>{({ hotel: "宿泊施設", odawara: "小田原駅", last: "旅程の最後", selected: "選択中" })[key]}</button>)}</div>
+            <div className="spot-list">{visibleSpots.map((spot) => { const distance = airDistanceKm(spot, referencePoint) * (airDistanceKm(spot, referencePoint) < 3 ? 1.45 : 1.65); const minutes = Math.max(6, Math.round(distance * 2.2 + 4)); return <button key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`} onClick={() => { setSelectedSpot(spot); setMobileSheetOpen(true); }}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small>{spot.category} · 滞在 {spot.stayMinutes}分 · {crowdSourceLabel[spot.crowdSource]}</small><small className="spot-distance">{({ hotel: "宿から", odawara: "小田原駅から", last: "旅程の最後から", selected: "選択中の地点から" })[distanceReference]} 車{minutes}分・{distance.toFixed(1)}km</small></span><ChevronDown size={15} /></button>; })}</div>
           </section>
 
-          <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onAdd={addSpot} onClose={() => setSelectedSpot(undefined)} />
+          <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onOpenAdd={setAddDialogSpot} onClose={() => setSelectedSpot(undefined)} />
 
           <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={updateItinerary} onClear={clearItinerary} /></div>
 
@@ -206,7 +217,8 @@ export default function Home() {
             <div className="stress-gauge" role="progressbar" aria-label="旅程の負荷スコア" aria-valuemin={0} aria-valuemax={100} aria-valuenow={loadScore} aria-valuetext={`負荷 ${loadScore}点、判定 ${stress.label}`}><span aria-hidden="true" style={{ width: `${loadScore}%` }} /><i aria-hidden="true" style={{ left: `${loadScore}%` }} /></div>
             <div className="stress-scale"><span>ゆったり</span><span>忙しい</span></div>
             <p>{getStressDescription(stress.label)}</p>
-            <div className="stress-breakdown" aria-label="負荷スコアの内訳">{stress.breakdown.map((item) => <div key={item.label}><span>{item.label}<small>{item.note}</small></span><strong>{item.score}<em>/{item.max}</em></strong></div>)}</div>
+            <div className="daily-stress" aria-label="日ごとの負荷"><span>8月12日 <strong>{stress.days[1].score} / 100</strong> {stress.days[1].label}</span><span>8月13日 <strong>{stress.days[2].score} / 100</strong> {stress.days[2].label}</span></div>
+            <div className="stress-breakdown" aria-label="旅行全体の負荷内訳">{stress.days[activeDay].breakdown.map((item) => <div key={item.label}><span>{item.label}<small>{item.note}</small></span><strong>{item.score}<em>/{item.max}</em></strong></div>)}</div>
             <ul>{stress.suggestions.map((suggestion) => <li key={suggestion}><CheckCircle2 size={15} /> {suggestion}</li>)}</ul>
           </section>
 
@@ -232,6 +244,7 @@ export default function Home() {
         <button onClick={() => openMobilePanel("itinerary-panel")}><CalendarDays size={16} /> 旅程</button>
       </nav>
       {toast && <div className="toast" role="status" aria-live="polite"><CheckCircle2 size={17} /> {toast}</div>}
+      {addDialogSpot && <AddSpotDialog spot={addDialogSpot} itinerary={itinerary} spots={spots} onConfirm={(request) => addSpot(addDialogSpot, request)} onClose={() => setAddDialogSpot(undefined)} />}
     </main>
   );
 }

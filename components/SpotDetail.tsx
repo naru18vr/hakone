@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { Car, Check, Clock3, CloudRain, ExternalLink, Footprints, MapPin, Plus, Users, X } from "lucide-react";
-import { AddSpotRequest } from "@/lib/itinerary";
 import { CrowdSource, ItineraryItem, Spot } from "@/types";
 
 const sourceLabel: Record<CrowdSource, string> = {
@@ -13,22 +11,16 @@ const sourceLabel: Record<CrowdSource, string> = {
 };
 
 const crowdLabel = ["", "比較的空いている", "やや混雑", "混雑", "非常に混雑"];
-export type AddRequest = AddSpotRequest;
-
 type Props = {
   spot?: Spot;
   itinerary: ItineraryItem[];
   distanceFromHotel?: number;
   distanceFromOdawara?: number;
-  onAdd: (spot: Spot, request: AddRequest) => void;
+  onOpenAdd: (spot: Spot) => void;
   onClose: () => void;
 };
 
-export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanceFromOdawara, onAdd, onClose }: Props) {
-  const [targetDay, setTargetDay] = useState<1 | 2>(1);
-  const [placement, setPlacement] = useState<AddRequest["placement"]>("end");
-  const [targetId, setTargetId] = useState("");
-  const [preferredTime, setPreferredTime] = useState("");
+export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanceFromOdawara, onOpenAdd, onClose }: Props) {
 
   if (!spot) return (
     <section className="detail-empty">
@@ -37,11 +29,7 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
     </section>
   );
 
-  const added = itinerary.find((item) => item.type === "spot" && item.spotId === spot.id);
-  const dayOptions = itinerary.filter((item) => item.day === targetDay && item.type !== "start" && item.type !== "goal").sort((a, b) => a.order - b.order);
-  const needsTarget = placement === "before" || placement === "after";
-  const needsTime = placement === "time";
-  const canAdd = !added && (!needsTarget || Boolean(targetId)) && (!needsTime || Boolean(preferredTime));
+  const addedDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))];
 
   return (
     <section className="detail-card" aria-live="polite">
@@ -74,28 +62,8 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
         <span>小田原駅から <strong>{distanceFromOdawara?.toFixed(1) ?? "-"} km</strong></span>
       </div>
       <p className="data-note">情報区分：静的な参考データ／登録日 2026-07-24<br />{spot.dataNote}</p>
-      <div className="add-destination" aria-label="旅程への追加先">
-        <div className="add-step"><span>1. 追加する日</span><div className="add-choice-row"><button type="button" className={targetDay === 1 ? "active" : ""} onClick={() => { setTargetDay(1); setTargetId(""); }} disabled={Boolean(added)}>8月12日</button><button type="button" className={targetDay === 2 ? "active" : ""} onClick={() => { setTargetDay(2); setTargetId(""); }} disabled={Boolean(added)}>8月13日</button></div></div>
-        <label className="add-step">2. 追加方法
-          <select value={placement} onChange={(event) => { setPlacement(event.target.value as AddRequest["placement"]); setTargetId(""); }} disabled={Boolean(added)}>
-            <option value="end">日程の最後</option>
-            <option value="before">指定地点の前</option>
-            <option value="after">指定地点の後</option>
-            <option value="time">希望時刻を指定</option>
-          </select>
-        </label>
-        {needsTarget && <label className="add-step">3. 基準地点（{targetDay === 1 ? "8月12日" : "8月13日"}）
-          <select value={targetId} onChange={(event) => setTargetId(event.target.value)} disabled={Boolean(added)}>
-            <option value="">地点を選択してください</option>
-            {dayOptions.map((item) => <option key={item.id} value={item.id}>{item.order}. {item.title}</option>)}
-          </select>
-        </label>}
-        {needsTime && <label className="add-step">3. 希望到着時刻
-          <input type="time" value={preferredTime} onChange={(event) => setPreferredTime(event.target.value)} disabled={Boolean(added)} required />
-        </label>}
-      </div>
       <div className="detail-actions">
-        {added ? <button className="primary-button added" disabled><Check size={17} /> {added.day === 1 ? "8月12日" : "8月13日"}の旅程に追加済み</button> : <button className="primary-button" disabled={!canAdd} onClick={() => onAdd(spot, { day: targetDay, placement, targetId: targetId || undefined, preferredTime: preferredTime || undefined })}><Plus size={17} /> {targetDay === 1 ? "8月12日" : "8月13日"}へ追加</button>}
+        <button className="primary-button" onClick={() => onOpenAdd(spot)}>{addedDays.length ? <Check size={17} /> : <Plus size={17} />}{addedDays.length ? ` 8月${addedDays.map((day) => day === 1 ? "12" : "13").join("・")}日に追加済み` : " 旅程へ追加"}</button>
         {spot.officialUrl && <a className="secondary-button" href={spot.officialUrl} target="_blank" rel="noreferrer">公式サイト <ExternalLink size={15} /></a>}
       </div>
     </section>

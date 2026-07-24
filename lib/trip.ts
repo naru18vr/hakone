@@ -59,7 +59,7 @@ export const calcDaySummary = (items: ItineraryItem[], spots: Spot[], startTime 
   const baseDriveMinutes = legs.reduce((sum, leg) => sum + leg.baseMinutes, 0);
   const predictedDriveMinutes = legs.reduce((sum, leg) => sum + leg.predictedMinutes, 0);
   const stayMinutes = sorted.reduce((sum, item) => sum + item.stayMinutes, 0);
-  return { legs, distanceKm, baseDriveMinutes, predictedDriveMinutes, stayMinutes, waitMinutes: schedule.waitMinutes, totalMinutes: predictedDriveMinutes + stayMinutes + schedule.waitMinutes };
+  return { legs, distanceKm, baseDriveMinutes, predictedDriveMinutes, stayMinutes, waitMinutes: schedule.waitMinutes, endMinutes: schedule.endMinutes, totalMinutes: predictedDriveMinutes + stayMinutes + schedule.waitMinutes };
 };
 
 export const calcTripSummary = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[]) => {
@@ -95,12 +95,13 @@ export type StressResult = {
   score: number;
   breakdown: StressBreakdown[];
   suggestions: string[];
+  days: Record<1 | 2, Omit<StressResult, "days">>;
 };
 
 export const getStressLabel = (score: number): StressResult["label"] => {
-  if (score <= 20) return "かなりゆったり";
-  if (score <= 40) return "ゆったり";
-  if (score <= 60) return "標準";
+  if (score <= 25) return "かなりゆったり";
+  if (score <= 45) return "ゆったり";
+  if (score <= 65) return "標準";
   if (score <= 80) return "やや忙しい";
   return "詰め込みすぎ";
 };
@@ -113,39 +114,52 @@ export const getStressDescription = (label: StressResult["label"]) => ({
   "詰め込みすぎ": "予定の密度が高く、混雑時に帰着時刻が大きくずれるおそれがあります。訪問先の削減をおすすめします。",
 })[label];
 
-export const assessStress = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[]): StressResult => {
-  const allDays = [calcDaySummary(day1, spots, "11:15"), calcDaySummary(day2, spots, "09:00")];
-  const totalDrive = allDays.reduce((sum, day) => sum + day.predictedDriveMinutes, 0);
-  const spotItems = [...day1, ...day2].filter((item) => item.type === "spot");
-  const crowded = spotItems.filter((item) => (spots.find((spot) => spot.id === item.spotId)?.crowdLevel ?? 1) >= 4);
-  const parkingRisk = spotItems.filter((item) => {
-    const spot = spots.find((candidate) => candidate.id === item.spotId);
-    return (spot?.crowdLevel ?? 1) >= 3 && (spot?.parkingSpaces?.includes("少") || spot?.parkingSpaces?.includes("台"));
-  });
-  const walking = spotItems.reduce((sum, item) => sum + (spots.find((spot) => spot.id === item.spotId)?.walkingLevel ?? 0), 0);
-  const busiestDay = Math.max(...allDays.map((day) => day.totalMinutes));
-  const hasBreak = [day1, day2].some((day) => day.some((item) => item.type === "break"));
-  const day2ReturnMinutes = allDays[1].totalMinutes;
-
+const dayStress = (items: ItineraryItem[], spots: Spot[], day: 1 | 2): Omit<StressResult, "days"> => {
+  const summary = calcDaySummary(items, spots, day === 1 ? "11:15" : "09:00");
+  const spotItems = items.filter((item) => item.type === "spot");
+  const spotData = spotItems.map((item) => spots.find((spot) => spot.id === item.spotId)).filter((spot): spot is Spot => Boolean(spot));
+  const highCrowd = spotData.filter((spot) => spot.crowdLevel >= 4).length;
+  const mediumCrowd = spotData.filter((spot) => spot.crowdLevel === 3).length;
+  const parkingRisk = spotData.filter((spot) => spot.crowdLevel >= 3 && spot.parkingAvailable).length;
+  const walking = spotData.reduce((sum, spot) => sum + spot.walkingLevel, 0);
+  const hasBreak = items.some((item) => item.type === "break");
+  const hasReturnGoal = items.some((item) => item.type === "goal" || item.spotId === "odawara-station");
+  const repeatedStops = new Set(spotItems.map((item) => item.spotId)).size < spotItems.length;
+  const returnRisk = day === 2
+    ? Math.min(10, Math.max(0, Math.round((summary.totalMinutes - 330) / 24)) + (hasReturnGoal ? 0 : 3))
+    : 0;
   const breakdown: StressBreakdown[] = [
-    { label: "移動負荷", score: Math.min(22, Math.round(totalDrive / 8)), max: 22, note: `混雑考慮の運転 ${minutesToText(totalDrive)}` },
-    { label: "道路混雑リスク", score: Math.min(15, crowded.length * 4 + spotItems.filter((item) => (spots.find((spot) => spot.id === item.spotId)?.crowdLevel ?? 1) === 3).length * 2), max: 15, note: `混雑が高い候補 ${crowded.length}件` },
-    { label: "駐車場待ちリスク", score: Math.min(10, parkingRisk.length * 3), max: 10, note: `混雑しやすい駐車場 ${parkingRisk.length}件` },
-    { label: "徒歩負荷", score: Math.min(10, Math.round(walking / 2)), max: 10, note: `歩く量の合計 ${walking} / 5段階` },
-    { label: "予定の詰まり", score: Math.min(15, Math.max(0, Math.round((busiestDay - 220) / 20)) + Math.max(0, spotItems.length - 4) * 2), max: 15, note: `最も長い日 ${minutesToText(busiestDay)}` },
-    { label: "休憩不足", score: hasBreak ? 1 : 8, max: 8, note: hasBreak ? "休憩を予定済み" : "独立した休憩が未設定" },
-    { label: "子どもの疲れ", score: Math.min(8, Math.round(walking / 5) + crowded.length * 2), max: 8, note: "歩く量と混雑を加味" },
-    { label: "帰京時刻への余裕", score: Math.min(12, Math.max(0, Math.round((day2ReturnMinutes - 300) / 18))), max: 12, note: `2日目の行程 ${minutesToText(day2ReturnMinutes)}` },
+    { label: "運転時間", score: Math.min(15, Math.round(summary.predictedDriveMinutes / 15)), max: 15, note: `混雑考慮の運転 ${minutesToText(summary.predictedDriveMinutes)}` },
+    { label: "道路混雑", score: Math.min(15, highCrowd * 4 + mediumCrowd * 2), max: 15, note: `高 ${highCrowd}件・やや高 ${mediumCrowd}件` },
+    { label: "駐車場待ち", score: Math.min(10, parkingRisk * 2), max: 10, note: `混雑予測の駐車場 ${parkingRisk}件` },
+    { label: "観光地数", score: Math.min(10, Math.max(0, spotItems.length - 2) * 3), max: 10, note: `観光地 ${spotItems.length}件` },
+    { label: "徒歩量", score: Math.min(10, Math.round(walking / 3)), max: 10, note: `歩く量の合計 ${walking} / 5段階` },
+    { label: "休憩不足", score: hasBreak ? 0 : Math.min(10, summary.totalMinutes > 360 ? 7 : summary.totalMinutes > 270 ? 4 : 1), max: 10, note: hasBreak ? "独立した休憩を予定済み" : "独立した休憩が未設定" },
+    { label: "子どもの疲れ", score: Math.min(10, Math.round(walking / 4) + highCrowd * 2 + (summary.totalMinutes > 390 ? 2 : 0)), max: 10, note: "歩く量・混雑・行程時間を加味" },
+    { label: "営業時間の余裕", score: Math.min(5, summary.endMinutes > 16 * 60 ? 4 : summary.endMinutes > 15 * 60 ? 2 : 0), max: 5, note: `終了予定 ${formatClock(summary.endMinutes)}` },
+    { label: "帰京時刻の余裕", score: returnRisk, max: 10, note: day === 2 ? `2日目の行程 ${minutesToText(summary.totalMinutes)}` : "宿泊で翌日にリセット" },
+    { label: "同じ道の往復", score: repeatedStops ? 5 : 0, max: 5, note: repeatedStops ? "同じ観光地を複数回通過" : "同じ地点の往復は未検出" },
   ];
   const score = Math.min(100, breakdown.reduce((sum, item) => sum + item.score, 0));
-  const suggestions: string[] = [];
-  if (day2.some((item) => item.spotId === "owakudani")) suggestions.push("大涌谷を外すと、混雑時の待機と移動を約40分以上減らせる可能性があります。");
-  if (day2.some((item) => item.spotId === "pola") && day2.some((item) => item.spotId === "wetland-garden")) suggestions.push("ポーラ美術館と湿生花園は仙石原側でまとめると、山道の往復を抑えられます。");
-  if (!day2.some((item) => item.type === "break")) suggestions.push("午後に15〜20分の休憩を一つ入れると、子どもの疲労と運転の集中切れを抑えやすくなります。");
-  if (crowded.length > 0) suggestions.push("混雑度が高い地点は9時台に到着するか、当日の公式案内を見て代替候補へ切り替えてください。");
   const label = getStressLabel(score);
-  if (score >= 81) suggestions.unshift("負荷スコアが81点以上です。行き先を一つ以上減らすか、2日目の滞在時間を短くしてください。");
-  else if (score >= 61) suggestions.unshift("負荷スコアが61点以上です。混雑しやすい場所を朝に回すか、午後の訪問先を一つ減らすと安心です。");
-  else if (suggestions.length === 0) suggestions.push("現状は仙石原周辺でまとまっています。昼食を11時30分頃にすると混雑を避けやすいです。");
+  const suggestions: string[] = [];
+  if (!hasBreak && score > 35) suggestions.push("15〜20分の休憩を一つ入れると、運転と子どもの疲れを抑えやすくなります。");
+  if (highCrowd > 0) suggestions.push("混雑が高い地点は朝に回すか、当日の公式案内を見て代替候補へ切り替えてください。");
+  if (returnRisk >= 5) suggestions.push("2日目は小田原へ戻る時刻を早めると、東京での夕食に余裕を作れます。");
   return { label, score, breakdown, suggestions: suggestions.slice(0, 3) };
+};
+
+/** 日ごとのピークを重視し、宿泊によるリセット分を差し引いた比較用スコア。 */
+export const assessStress = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[]): StressResult => {
+  const first = dayStress(day1, spots, 1);
+  const second = dayStress(day2, spots, 2);
+  const peak = Math.max(first.score, second.score);
+  const lower = Math.min(first.score, second.score);
+  const score = Math.min(100, Math.round(peak * 0.72 + lower * 0.18 + (first.score >= 55 && second.score >= 55 ? 5 : 0)));
+  const label = getStressLabel(score);
+  const suggestions = [...second.suggestions, ...first.suggestions];
+  if (day2.some((item) => item.spotId === "owakudani")) suggestions.unshift("大涌谷を外すと、混雑時の待機と移動を約40分以上減らせる可能性があります。");
+  if (score >= 66) suggestions.unshift("負荷がやや高めです。優先度の低い場所を一つ減らすか、混雑しやすい場所を朝に回すと安心です。");
+  if (suggestions.length === 0) suggestions.push("現状は移動と滞在のバランスが取れています。昼食を早めにするとさらに余裕ができます。");
+  return { label, score, breakdown: [...first.breakdown, ...second.breakdown], suggestions: [...new Set(suggestions)].slice(0, 3), days: { 1: first, 2: second } };
 };

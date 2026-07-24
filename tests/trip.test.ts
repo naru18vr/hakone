@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { initialPlan } from "@/data/plans";
 import { spots } from "@/data/spots";
 import { addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
-import { getRoutePresentation } from "@/lib/routing";
+import { createRouteCache, getRoutePresentation } from "@/lib/routing";
+import { recommendSpotPlacement } from "@/lib/recommendation";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { assessStress, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
 import { ItineraryItem, TripState } from "@/types";
@@ -57,11 +58,24 @@ describe("旅程の計算と編集", () => {
     expect(result.reason).toBe("duplicate");
     expect(result.itinerary).toEqual(existing);
   });
+
+  it("明示した場合だけ既存観光地を別日に追加できる", () => {
+    const result = addSpotToItinerary(clonePlan(), byId("glass-forest"), { day: 2, placement: "end", allowDuplicate: true }, "explicit-duplicate");
+    expect(result.added).toBe(true);
+    expect(result.itinerary.filter((item) => item.spotId === "glass-forest")).toHaveLength(2);
+  });
+
+  it("おすすめ追加位置は増加時間と負荷の情報を返す", () => {
+    const result = recommendSpotPlacement(clonePlan(), byId("wetland-garden"), 1, spots);
+    expect(result.request.day).toBe(1);
+    expect(result.driveDeltaMinutes).toBeGreaterThanOrEqual(0);
+    expect(result.afterScore).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe("負荷スコア", () => {
   it.each([
-    [0, "かなりゆったり"], [20, "かなりゆったり"], [21, "ゆったり"], [40, "ゆったり"], [41, "標準"], [60, "標準"], [61, "やや忙しい"], [80, "やや忙しい"], [81, "詰め込みすぎ"], [100, "詰め込みすぎ"],
+    [0, "かなりゆったり"], [25, "かなりゆったり"], [26, "ゆったり"], [45, "ゆったり"], [46, "標準"], [65, "標準"], [66, "やや忙しい"], [80, "やや忙しい"], [81, "詰め込みすぎ"], [100, "詰め込みすぎ"],
   ] as const)("%i点は%s", (score, label) => expect(getStressLabel(score)).toBe(label));
 
   it("算出したスコアと表示ラベルは同じ区分を使う", () => {
@@ -71,6 +85,8 @@ describe("負荷スコア", () => {
     expect(result.label).toBe(getStressLabel(result.score));
     expect(result.score).toBeGreaterThanOrEqual(0);
     expect(result.score).toBeLessThanOrEqual(100);
+    expect(result.days[1].label).toBe(getStressLabel(result.days[1].score));
+    expect(result.days[2].label).toBe(getStressLabel(result.days[2].score));
   });
 });
 
@@ -96,6 +112,15 @@ describe("保存データ", () => {
 describe("経路の表示と全体集計", () => {
   it("道路経路の失敗時は簡易推計と明示する", () => {
     expect(getRoutePresentation("fallback")).toMatchObject({ status: "estimate", label: "簡易推計" });
+  });
+
+  it("同じ順序の道路経路はセッションキャッシュから再利用する", () => {
+    const cache = createRouteCache();
+    const items = clonePlan().filter((item) => item.day === 1);
+    const route = { geometry: [[35.1, 139.1] as [number, number]], source: "routing" as const };
+    cache.set(items, route);
+    expect(cache.get(items)).toEqual(route);
+    expect(cache.size()).toBe(1);
   });
 
   it("1日目・2日目・全体の合計が一致する", () => {
