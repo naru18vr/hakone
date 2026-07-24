@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { initialPlan } from "@/data/plans";
 import { spots } from "@/data/spots";
 import { addCustomItemToItinerary, addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
-import { isValidCoordinates, locationFromSpot, normalizeCustomLocation } from "@/lib/location";
+import { isSameLocation, isValidCoordinates, locationFromSpot, normalizeCustomLocation } from "@/lib/location";
 import { createRouteCache, getRoutePresentation, routeModeForElapsed } from "@/lib/routing";
 import { recommendSpotPlacement } from "@/lib/recommendation";
 import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
 import { crowdDetails } from "@/lib/crowd";
 import { createShareUrl, createSharedPayload, decodeSharedPayload, shareUrlLengthLevel } from "@/lib/share";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
-import { assessStress, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
+import { assessStress, buildDayRouteLegs, buildDaySchedule, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
 import { ItineraryItem, TripState } from "@/types";
 
 const clonePlan = () => initialPlan.itinerary.map((item) => ({ ...item }));
@@ -107,7 +107,7 @@ describe("旅程の計算と編集", () => {
     const item = result.itinerary.find((entry) => entry.id === "custom-odawara");
     expect(item).toMatchObject({ latitude: odawara.latitude, longitude: odawara.longitude, location: { source: "odawara", spotId: "odawara-station" } });
     const summary = calcDaySummary(result.itinerary.filter((entry) => entry.day === 1), spots, "11:15");
-    expect(summary.legs.some((leg) => leg?.distanceKm === 0)).toBe(false);
+    expect(summary.legs.some((leg) => leg.estimate.distanceKm === 0)).toBe(false);
   });
 
   it("緯度経度を範囲内だけ受け入れ、6桁精度で正規化する", () => {
@@ -121,6 +121,32 @@ describe("旅程の計算と編集", () => {
     const result = addCustomItemToItinerary(clonePlan(), { type: "meal", title: "予約ランチ", day: 1, stayMinutes: 60, placement: "time", requestedArrivalTime: "16:30" }, "custom-time");
     const summary = calcDaySummary(result.itinerary.filter((item) => item.day === 1), spots, "11:15");
     expect(summary.waitMinutes).toBeGreaterThan(0);
+  });
+
+  it("地点なし予定を複数挟んでも、地点あり予定間の道路区間と時刻計算を維持する", () => {
+    const day: ItineraryItem[] = [
+      { id: "a", day: 1, type: "start", title: "小田原駅", stayMinutes: 20, order: 1, latitude: 35.2569, longitude: 139.1557, spotId: "odawara-station" },
+      { id: "rent", day: 1, type: "rental_car", title: "受取", stayMinutes: 30, order: 2 },
+      { id: "meal", day: 1, type: "meal", title: "昼食", stayMinutes: 60, order: 3 },
+      { id: "b", day: 1, type: "spot", title: "ガラスの森", stayMinutes: 100, order: 4, latitude: 35.264, longitude: 138.9999, spotId: "glass-forest" },
+    ];
+    const legs = buildDayRouteLegs(day, spots);
+    expect(legs).toHaveLength(1);
+    expect(legs[0]).toMatchObject({ fromItem: { id: "a" }, toItem: { id: "b" }, skippedItems: [{ id: "rent" }, { id: "meal" }] });
+    const schedule = buildDaySchedule(day, spots, "11:15");
+    expect(schedule.entries.find((entry) => entry.item.id === "b")?.leg?.predictedMinutes).toBeGreaterThan(0);
+    expect(calcDaySummary(day, spots, "11:15").stayMinutes).toBe(210);
+  });
+
+  it("50m未満または同一スポットIDの地点を同じ場所として移動0分にする", () => {
+    const from: ItineraryItem = { id: "a", day: 1, type: "meal", title: "食事", stayMinutes: 60, order: 1, latitude: 35.2569, longitude: 139.1557, spotId: "odawara-station" };
+    const near: ItineraryItem = { ...from, id: "b", order: 2, latitude: 35.2570, longitude: 139.1557, spotId: undefined };
+    expect(isSameLocation(from, near)).toBe(true);
+    expect(estimateLeg(from, near)).toMatchObject({ distanceKm: 0, baseMinutes: 0, predictedMinutes: 0, sameLocation: true });
+    const sameSpot: ItineraryItem = { ...from, id: "c", latitude: 35.258, longitude: 139.1557, spotId: "odawara-station" };
+    const far: ItineraryItem = { ...from, id: "d", latitude: 35.258, longitude: 139.1557, spotId: undefined };
+    expect(isSameLocation(from, sameSpot)).toBe(true);
+    expect(isSameLocation(from, far)).toBe(false);
   });
 
   it("不正なカスタム予定を追加しない", () => {

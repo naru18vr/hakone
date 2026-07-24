@@ -1,4 +1,5 @@
 import { ItineraryItem, Spot } from "@/types";
+import { isSameLocation } from "@/lib/location";
 
 const R = 6371;
 const toRad = (value: number) => (value * Math.PI) / 180;
@@ -14,11 +15,30 @@ export const airDistanceKm = (a: { latitude?: number; longitude?: number }, b: {
 
 /** 箱根の山道を意識した、安全側の簡易推計。実ルート取得時も混雑補正に利用する。 */
 export const estimateLeg = (a: ItineraryItem, b: ItineraryItem, crowdFactor = 1) => {
+  if (isSameLocation(a, b)) return { distanceKm: 0, baseMinutes: 0, predictedMinutes: 0, sameLocation: true };
   const airKm = airDistanceKm(a, b);
   const distanceKm = airKm * (airKm < 3 ? 1.45 : 1.65);
   const baseMinutes = Math.max(6, Math.round(distanceKm * 2.2 + 4));
   const predictedMinutes = Math.round(baseMinutes * crowdFactor);
-  return { distanceKm, baseMinutes, predictedMinutes };
+  return { distanceKm, baseMinutes, predictedMinutes, sameLocation: false };
+};
+
+export type DayRouteLeg = {
+  fromItem: ItineraryItem;
+  toItem: ItineraryItem;
+  skippedItems: ItineraryItem[];
+  estimate: ReturnType<typeof estimateLeg>;
+};
+
+/** 旅程中の地点なし予定を飛ばし、地点あり予定間だけの道路区間を作る。 */
+export const buildDayRouteLegs = (items: ItineraryItem[], spots: Spot[]): DayRouteLeg[] => {
+  const sorted = [...items].sort((a, b) => a.order - b.order);
+  const located = sorted.map((item, index) => ({ item, index })).filter(({ item }) => item.latitude !== undefined && item.longitude !== undefined);
+  return located.slice(1).map(({ item: toItem, index }, locatedIndex) => {
+    const previous = located[locatedIndex];
+    const crowd = spots.find((spot) => spot.id === toItem.spotId)?.crowdLevel ?? 1;
+    return { fromItem: previous.item, toItem, skippedItems: sorted.slice(previous.index + 1, index).filter((item) => item.latitude === undefined || item.longitude === undefined), estimate: estimateLeg(previous.item, toItem, 1 + Math.max(0, crowd - 1) * 0.08) };
+  });
 };
 
 export const timeToMinutes = (value: string) => {
@@ -33,34 +53,29 @@ export const formatClock = (minutes: number) => {
 
 export const buildDaySchedule = (items: ItineraryItem[], spots: Spot[], startTime = "09:00") => {
   const sorted = [...items].sort((a, b) => a.order - b.order);
-  const spotCrowd = (item: ItineraryItem) => spots.find((spot) => spot.id === item.spotId)?.crowdLevel ?? 1;
-  const legs = sorted.slice(1).map((item, index) => {
-    const previous = sorted[index];
-    if (previous.latitude === undefined || previous.longitude === undefined || item.latitude === undefined || item.longitude === undefined) return undefined;
-    const factor = 1 + Math.max(0, spotCrowd(item) - 1) * 0.08;
-    return estimateLeg(previous, item, factor);
-  });
+  const routeLegs = buildDayRouteLegs(sorted, spots);
+  const legByDestinationId = new Map(routeLegs.map((leg) => [leg.toItem.id, leg]));
   const startMinutes = timeToMinutes(startTime);
   let cursor = startMinutes;
-  const entries = sorted.map((item, index) => {
-    const leg = index > 0 ? legs[index - 1] : undefined;
+  const entries = sorted.map((item) => {
+    const routeLeg = legByDestinationId.get(item.id);
+    const leg = routeLeg?.estimate;
     const naturalArrival = cursor + (leg?.predictedMinutes ?? 0);
     const requestedArrival = item.startTime ? timeToMinutes(item.startTime) : naturalArrival;
     const arrivalMinutes = Math.max(naturalArrival, requestedArrival);
     const waitMinutes = Math.max(0, arrivalMinutes - naturalArrival);
     cursor = arrivalMinutes + effectiveStayMinutes(item);
-    return { item, leg, arrivalMinutes, arrivalOffset: arrivalMinutes - startMinutes, waitMinutes };
+    return { item, leg, routeLeg, arrivalMinutes, arrivalOffset: arrivalMinutes - startMinutes, waitMinutes };
   });
-  return { sorted, legs, entries, waitMinutes: entries.reduce((sum, entry) => sum + entry.waitMinutes, 0), endMinutes: cursor };
+  return { sorted, legs: routeLegs, entries, waitMinutes: entries.reduce((sum, entry) => sum + entry.waitMinutes, 0), endMinutes: cursor };
 };
 
 export const calcDaySummary = (items: ItineraryItem[], spots: Spot[], startTime = "09:00") => {
   const schedule = buildDaySchedule(items, spots, startTime);
   const { sorted, legs } = schedule;
-  const knownLegs = legs.filter((leg): leg is NonNullable<typeof leg> => Boolean(leg));
-  const distanceKm = knownLegs.reduce((sum, leg) => sum + leg.distanceKm, 0);
-  const baseDriveMinutes = knownLegs.reduce((sum, leg) => sum + leg.baseMinutes, 0);
-  const predictedDriveMinutes = knownLegs.reduce((sum, leg) => sum + leg.predictedMinutes, 0);
+  const distanceKm = legs.reduce((sum, leg) => sum + leg.estimate.distanceKm, 0);
+  const baseDriveMinutes = legs.reduce((sum, leg) => sum + leg.estimate.baseMinutes, 0);
+  const predictedDriveMinutes = legs.reduce((sum, leg) => sum + leg.estimate.predictedMinutes, 0);
   const stayMinutes = sorted.reduce((sum, item) => sum + effectiveStayMinutes(item), 0);
   return { legs, distanceKm, baseDriveMinutes, predictedDriveMinutes, stayMinutes, waitMinutes: schedule.waitMinutes, endMinutes: schedule.endMinutes, totalMinutes: predictedDriveMinutes + stayMinutes + schedule.waitMinutes };
 };

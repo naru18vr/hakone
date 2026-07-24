@@ -86,8 +86,8 @@ export default function ItineraryPlanner({ itinerary, spots, selectedSpot, activ
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={activeItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <ol className="itinerary-list detailed-itinerary">
-            {entries.map(({ item, arrivalOffset, leg: incomingLeg }, index) => <li key={item.id} className="itinerary-group">
-              {incomingLeg && <TravelLeg leg={incomingLeg} departure={formatEndTime(startTime, entries[index - 1].arrivalOffset + entries[index - 1].item.stayMinutes)} arrival={formatEndTime(startTime, arrivalOffset)} routeMode={routeMode} />}
+            {entries.map(({ item, arrivalOffset, leg: incomingLeg, routeLeg }, index) => <li key={item.id} className="itinerary-group">
+              {incomingLeg && routeLeg && <TravelLeg leg={incomingLeg} fromTitle={routeLeg.fromItem.title} toTitle={routeLeg.toItem.title} skippedCount={routeLeg.skippedItems.length} departure={formatEndTime(startTime, entries[index - 1].arrivalOffset + entries[index - 1].item.stayMinutes)} arrival={formatEndTime(startTime, arrivalOffset)} routeMode={routeMode} />}
               <SortableItem item={item} index={index} totalItems={activeItems.length} startTime={startTime} arrivalOffset={arrivalOffset} onMove={move} onRemove={remove} onMoveDay={moveDay} />
             </li>)}
           </ol>
@@ -104,11 +104,14 @@ export default function ItineraryPlanner({ itinerary, spots, selectedSpot, activ
   );
 }
 
-function TravelLeg({ leg, departure, arrival, routeMode }: { leg: ReturnType<typeof estimateLeg>; departure: string; arrival: string; routeMode: RouteMode }) {
+function TravelLeg({ leg, fromTitle, toTitle, skippedCount, departure, arrival, routeMode }: { leg: ReturnType<typeof estimateLeg>; fromTitle: string; toTitle: string; skippedCount: number; departure: string; arrival: string; routeMode: RouteMode }) {
+  if (leg.sameLocation) return <div className="travel-leg same-location"><CarFront size={14} /><div><strong>{fromTitle} → {toTitle}</strong><span>同じ場所のため移動0分・0km</span>{skippedCount > 0 && <em>地点なし予定 {skippedCount}件の滞在時間を反映</em>}</div></div>;
   const road = leg.predictedMinutes >= leg.baseMinutes * 1.2 ? "混雑" : leg.predictedMinutes > leg.baseMinutes ? "やや混雑" : "比較的スムーズ";
-  if (routeMode === "loading") return <div className="travel-leg loading" aria-live="polite"><CarFront size={14} /><div><strong><b>仮</b> 経路を計算中…</strong><span>{departure} 出発 → {arrival} 到着予定。時刻と距離は仮表示です。</span></div></div>;
-  if (routeMode === "fallback") return <div className={`travel-leg ${road} fallback`} title="直線距離に山道係数を掛けた仮計算です"><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着予定 <b>仮</b></strong><span>簡易推計 {leg.predictedMinutes}分 · 約 {leg.distanceKm.toFixed(1)}km</span><em>道路経路は取得できませんでした。直線距離を基にした仮計算です。</em></div><small>道路：{road}</small></div>;
-  return <div className={`travel-leg ${road} routing`}><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着</strong><span>車 {leg.baseMinutes}分 · {leg.distanceKm.toFixed(1)}km · 混雑考慮 {leg.predictedMinutes}分</span><em>道路経路取得済み</em></div><small>道路：{road}</small></div>;
+  const routeLabel = `${fromTitle} → ${toTitle}`;
+  const skipped = skippedCount > 0 ? `地点なし予定 ${skippedCount}件の滞在時間を反映` : undefined;
+  if (routeMode === "loading") return <div className="travel-leg loading" aria-live="polite"><CarFront size={14} /><div><strong><b>仮</b> {routeLabel}</strong><span>{departure} 出発 → {arrival} 到着予定。時刻と距離は仮表示です。</span>{skipped && <em>{skipped}</em>}</div></div>;
+  if (routeMode === "fallback") return <div className={`travel-leg ${road} fallback`} title="直線距離に山道係数を掛けた仮計算です"><CarFront size={14} /><div><strong>{routeLabel} <b>仮</b></strong><span>簡易推計 {leg.predictedMinutes}分 · 約 {leg.distanceKm.toFixed(1)}km</span><em>道路経路は取得できませんでした。直線距離を基にした仮計算です。</em>{skipped && <em>{skipped}</em>}</div><small>道路：{road}</small></div>;
+  return <div className={`travel-leg ${road} routing`}><CarFront size={14} /><div><strong>{routeLabel}</strong><span>{departure} 出発 → {arrival} 到着 · 車 {leg.baseMinutes}分 · {leg.distanceKm.toFixed(1)}km · 混雑考慮 {leg.predictedMinutes}分</span><em>道路経路取得済み</em>{skipped && <em>{skipped}</em>}</div><small>道路：{road}</small></div>;
 }
 
 function SortableItem({ item, index, totalItems, startTime, arrivalOffset, onMove, onRemove, onMoveDay }: {

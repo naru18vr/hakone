@@ -17,17 +17,17 @@ export const getRoutePresentation = (mode: RouteMode): RoutePresentation => {
 };
 
 export type RouteCacheKey = {
-  waypointIds: string[];
+  waypoints: string[];
   travelMode: "driving";
 };
 
-/** セッション中だけ使う、順序を含む道路経路キャッシュキー。 */
+/** セッション中だけ使う、座標と順序を含む道路経路キャッシュキー。 */
 export const createRouteCacheKey = (items: ItineraryItem[]): string => {
   const key: RouteCacheKey = {
-    waypointIds: items.map((item) => item.spotId ?? item.id),
+    waypoints: items.map((item) => `${Number(item.latitude).toFixed(6)},${Number(item.longitude).toFixed(6)}`),
     travelMode: "driving",
   };
-  return `${key.travelMode}:${key.waypointIds.join(">")}`;
+  return `${key.travelMode}:${key.waypoints.join(">")}`;
 };
 
 export const createRouteCache = () => {

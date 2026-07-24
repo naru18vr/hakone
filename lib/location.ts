@@ -32,3 +32,18 @@ export const normalizeCustomLocation = (value: unknown): CustomLocation | undefi
 };
 
 export const isOutsideHakoneArea = (location: Pick<CustomLocation, "latitude" | "longitude">) => location.latitude < 35.1 || location.latitude > 35.4 || location.longitude < 138.85 || location.longitude > 139.2;
+
+export const SAME_LOCATION_THRESHOLD_METERS = 50;
+const radians = (value: number) => value * Math.PI / 180;
+export const distanceMeters = (from: { latitude?: number; longitude?: number }, to: { latitude?: number; longitude?: number }) => {
+  if (!isValidLatitude(from.latitude) || !isValidLongitude(from.longitude) || !isValidLatitude(to.latitude) || !isValidLongitude(to.longitude)) return Number.POSITIVE_INFINITY;
+  const latitudeDelta = radians(to.latitude - from.latitude);
+  const longitudeDelta = radians(to.longitude - from.longitude);
+  const area = Math.sin(latitudeDelta / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(longitudeDelta / 2) ** 2;
+  return 6_371_000 * 2 * Math.atan2(Math.sqrt(area), Math.sqrt(1 - area));
+};
+export const isSameLocation = (from: { latitude?: number; longitude?: number; spotId?: string; location?: CustomLocation }, to: { latitude?: number; longitude?: number; spotId?: string; location?: CustomLocation }, thresholdMeters = SAME_LOCATION_THRESHOLD_METERS) => {
+  const fromSpotId = from.location?.spotId ?? from.spotId;
+  const toSpotId = to.location?.spotId ?? to.spotId;
+  return Boolean(fromSpotId && toSpotId && fromSpotId === toSpotId) || distanceMeters(from, to) < thresholdMeters;
+};

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { createRouteCache, getRoutePresentation } from "@/lib/routing";
+import { isSameLocation } from "@/lib/location";
 import { CustomLocation, ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
 type RouteModes = Record<1 | 2, RouteMode>;
@@ -69,6 +70,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         if (items.length < 2) return [day, fallback] as const;
         const legs = await Promise.all(items.slice(1).map(async (item, index) => {
           const pair = [items[index], item];
+          if (isSameLocation(pair[0], pair[1])) return { geometry: [[pair[0].latitude!, pair[0].longitude!] as [number, number]], source: "routing" } as RouteResult;
           const cached = routeCache.get(pair);
           if (cached) return cached;
           try {
