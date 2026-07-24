@@ -41,21 +41,23 @@ npm run build
 
 | 変数 | 必須 | 用途 |
 | --- | --- | --- |
-| `ROUTING_API_URL` | 任意 | OSRM互換の経路API URL。未指定時は公開OSRMデモサーバーを試行します。 |
+| `NEXT_PUBLIC_ROUTING_API_URL` | 任意 | ブラウザからアクセス可能なOSRM互換の経路API URL。未指定時は公開OSRMデモサーバーを試行します。 |
 | `GOOGLE_MAPS_API_KEY` | 将来用 | Google Maps / Directions を接続する場合のサーバー側キー。現状は未使用。 |
 | `MAPBOX_ACCESS_TOKEN` | 将来用 | Mapboxを接続する場合のキー。現状は未使用。 |
 | `OPENROUTESERVICE_API_KEY` | 将来用 | OpenRouteServiceを接続する場合のキー。現状は未使用。 |
 
-この試作ではキーをブラウザへ公開しません。現在の `/api/route` はサーバー側でOSRM互換エンドポイントに問い合わせます。接続に失敗しても、地点を結ぶ破線ルートと安全側の簡易見積もりでアプリを利用できます。
+GitHub PagesではサーバーAPIを実行できないため、経路APIにはブラウザから直接アクセスします。機密情報を `NEXT_PUBLIC_*` に置かないでください。接続に失敗しても、地点を結ぶ破線ルートと安全側の簡易見積もりでアプリを利用できます。
 
-## デプロイ（Vercel）
+## デプロイ（GitHub Pages）
 
-1. GitHub上で `naru18vr/hakone` をVercelにインポートする。
-2. Framework Preset は **Next.js** を選択する。
-3. 必要に応じて `ROUTING_API_URL` をVercelのEnvironment Variablesへ設定する。
-4. Deploy を実行する。
+`main` へのプッシュで `.github/workflows/deploy-pages.yml` が実行され、Next.jsの静的出力フォルダ `out` をGitHub Pagesへ公開します。
 
-公開OSRMは試作用です。本番では、利用規約・レート制限・可用性を満たす自前OSRMまたは契約済みのルーティングAPIを設定してください。
+1. GitHubリポジトリの **Settings → Pages** を開く。
+2. **Build and deployment** の **Source** を **GitHub Actions** に設定する。
+3. `main` へプッシュする。Actionsの **Deploy to GitHub Pages** が成功すると公開される。
+4. 公開URLは `https://naru18vr.github.io/hakone/`。
+
+GitHub PagesはサーバーAPIを実行できない静的ホスティングです。そのため経路はブラウザからOSRM互換APIへ直接問い合わせ、接続できない場合は破線の簡易ルートに切り替わります。公開OSRMは試作用です。本番では、利用規約・レート制限・可用性を満たすAPIを設定してください。
 
 ## データ構造
 

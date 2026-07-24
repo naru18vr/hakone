@@ -50,13 +50,14 @@ export default function MapCanvas({ spots, selectedSpot, onSelectSpot, itinerary
         };
         if (items.length < 2) return [day, fallback] as const;
         try {
-          const response = await fetch("/api/route", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ coordinates: items.map((item) => [item.longitude, item.latitude]) }),
-          });
+          const baseUrl = (process.env.NEXT_PUBLIC_ROUTING_API_URL || "https://router.project-osrm.org").replace(/\/$/, "");
+          const coordinates = items.map((item) => `${item.longitude},${item.latitude}`).join(";");
+          const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`);
           if (!response.ok) throw new Error("route unavailable");
           const data = await response.json();
-          return [day, { geometry: data.geometry.map(([longitude, latitude]: [number, number]) => [latitude, longitude]), source: "routing" }] as const;
+          const route = data?.routes?.[0];
+          if (!route?.geometry?.coordinates) throw new Error("route unavailable");
+          return [day, { geometry: route.geometry.coordinates.map(([longitude, latitude]: [number, number]) => [latitude, longitude]), source: "routing" }] as const;
         } catch {
           return [day, fallback] as const;
         }
