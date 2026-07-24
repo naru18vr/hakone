@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { getRoutePresentation } from "@/lib/routing";
 import { ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
 type RouteModes = Record<1 | 2, RouteMode>;
@@ -37,13 +38,15 @@ function FitToMarkers({ points }: { points: [number, number][] }) {
 export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary, onRouteModesChange }: Props) {
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
   const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
+  const requestId = useRef(0);
   const dayItems = useMemo(() => ({
     1: itinerary.filter((item) => item.day === 1 && item.latitude !== undefined && item.longitude !== undefined).sort((a, b) => a.order - b.order),
     2: itinerary.filter((item) => item.day === 2 && item.latitude !== undefined && item.longitude !== undefined).sort((a, b) => a.order - b.order),
   }), [itinerary]);
 
   useEffect(() => {
-    let disposed = false;
+    const currentRequestId = ++requestId.current;
+    const controller = new AbortController();
     const load = async () => {
       const entries = await Promise.all(([1, 2] as const).map(async (day) => {
         const items = dayItems[day];
@@ -55,17 +58,18 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         try {
           const baseUrl = (process.env.NEXT_PUBLIC_ROUTING_API_URL || "https://router.project-osrm.org").replace(/\/$/, "");
           const coordinates = items.map((item) => `${item.longitude},${item.latitude}`).join(";");
-          const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`);
+          const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`, { signal: controller.signal });
           if (!response.ok) throw new Error("route unavailable");
           const data = await response.json();
           const route = data?.routes?.[0];
           if (!route?.geometry?.coordinates) throw new Error("route unavailable");
           return [day, { geometry: route.geometry.coordinates.map(([longitude, latitude]: [number, number]) => [latitude, longitude]), source: "routing" }] as const;
-        } catch {
+        } catch (error) {
+          if (controller.signal.aborted) throw error;
           return [day, fallback] as const;
         }
       }));
-      if (disposed) return;
+      if (controller.signal.aborted || currentRequestId !== requestId.current) return;
       const next = Object.fromEntries(entries) as Partial<Record<1 | 2, RouteResult>>;
       const nextModes: RouteModes = { 1: next[1]?.source ?? "fallback", 2: next[2]?.source ?? "fallback" };
       setRoutes(next);
@@ -73,10 +77,21 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
       onRouteModesChange?.(nextModes);
     };
     const loadingModes: RouteModes = { 1: "loading", 2: "loading" };
-    setRouteModes(loadingModes);
-    onRouteModesChange?.(loadingModes);
-    void load();
-    return () => { disposed = true; };
+    const loadingTimer = window.setTimeout(() => {
+      if (controller.signal.aborted || currentRequestId !== requestId.current) return;
+      setRoutes({});
+      setRouteModes(loadingModes);
+      onRouteModesChange?.(loadingModes);
+    }, 0);
+    const timer = window.setTimeout(() => {
+      void load().catch(() => {
+        if (controller.signal.aborted || currentRequestId !== requestId.current) return;
+        const fallbackModes: RouteModes = { 1: "fallback", 2: "fallback" };
+        setRouteModes(fallbackModes);
+        onRouteModesChange?.(fallbackModes);
+      });
+    }, 250);
+    return () => { window.clearTimeout(loadingTimer); window.clearTimeout(timer); controller.abort(); };
   }, [dayItems, onRouteModesChange]);
 
   const fitPoints = useMemo(() => [
@@ -93,9 +108,10 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
       : routeDay === "all" && routeModes[1] !== routeModes[2]
         ? "一部は道路ルート、一部は簡易線（API未接続）"
         : "簡易ルートを表示（道路経路API未接続）";
+  const routePresentation = getRoutePresentation(routeStatus);
 
   return (
-    <section className="map-shell" aria-label="箱根周辺の地図">
+    <section className="map-shell" id="map-route-panel" role="tabpanel" aria-labelledby={`route-tab-${routeDay}`} aria-label="箱根周辺の地図">
       <MapContainer center={[35.252, 139.035]} zoom={11} scrollWheelZoom className="map-canvas">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -123,8 +139,8 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         ))}
         <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
       </div>
-      <div className={`route-mode ${routeStatus}`}>
-        {routeModeText}
+      <div className={`route-mode ${routeStatus}`} aria-live="polite">
+        {routeStatus === "loading" ? routePresentation.label : routeModeText}
       </div>
       {selectedSpot && <div className="map-selected">選択中：{selectedSpot.name}</div>}
     </section>

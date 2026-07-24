@@ -64,6 +64,25 @@ export type RouteResult = {
 /** 道路経路の取得状況。fallback は道路形状を取得できず、直線の参考線を表示している状態。 */
 export type RouteMode = RouteResult["source"] | "loading";
 
+export type TripState = {
+  itinerary: ItineraryItem[];
+  hotelName: string;
+  selectedSpotId?: string;
+  activeDay: 1 | 2;
+  routeDay: 1 | 2 | "all";
+  activeFilters: string[];
+  crowdMode: "forecast" | "general";
+  visitTime: string;
+  weather: "晴れ" | "雨" | "くもり";
+};
+
+/** LocalStorage に保存する、明示的にバージョン管理された旅程データ。 */
+export type SavedTripState = {
+  version: 1;
+  savedAt: string;
+  data: TripState;
+};
+
 export type SamplePlan = {
   id: string;
   name: string;

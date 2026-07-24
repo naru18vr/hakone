@@ -1,0 +1,108 @@
+import { describe, expect, it } from "vitest";
+import { initialPlan } from "@/data/plans";
+import { spots } from "@/data/spots";
+import { addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
+import { getRoutePresentation } from "@/lib/routing";
+import { restoreTripState, serializeTripState } from "@/lib/storage";
+import { assessStress, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
+import { ItineraryItem, TripState } from "@/types";
+
+const clonePlan = () => initialPlan.itinerary.map((item) => ({ ...item }));
+const byId = (id: string) => {
+  const spot = spots.find((item) => item.id === id);
+  if (!spot) throw new Error(`spot not found: ${id}`);
+  return spot;
+};
+const defaultState = (): TripState => ({
+  itinerary: clonePlan(),
+  hotelName: "テスト宿",
+  selectedSpotId: "glass-forest",
+  activeDay: 1,
+  routeDay: "all",
+  activeFilters: ["自然"],
+  crowdMode: "forecast",
+  visitTime: "11:30",
+  weather: "晴れ",
+});
+
+describe("旅程の計算と編集", () => {
+  it("順番を変えると到着時刻と移動集計を再計算する", () => {
+    const day = clonePlan().filter((item) => item.day === 2);
+    const reordered = [...day].reverse().map((item, index) => ({ ...item, order: index + 1 }));
+    const before = calcDaySummary(day, spots, "09:00");
+    const after = calcDaySummary(reordered, spots, "09:00");
+    expect(before.legs).toHaveLength(after.legs.length);
+    expect(before.totalMinutes).not.toBe(after.totalMinutes);
+  });
+
+  it("日付移動後に日ごとの集計と順番を正規化する", () => {
+    const original = clonePlan();
+    const source = original.find((item) => item.type === "spot" && item.day === 1);
+    if (!source) throw new Error("test source missing");
+    const moved = moveItineraryItemToDay(original, source.id, 2);
+    expect(moved.find((item) => item.id === source.id)?.day).toBe(2);
+    expect(moved.filter((item) => item.day === 2).map((item) => item.order)).toEqual(moved.filter((item) => item.day === 2).map((_, index) => index + 1));
+  });
+
+  it("混雑考慮時間は通常時間以上になる", () => {
+    const [from, to] = clonePlan().filter((item) => item.latitude !== undefined).slice(0, 2);
+    const leg = estimateLeg(from, to, 1.24);
+    expect(leg.predictedMinutes).toBeGreaterThanOrEqual(leg.baseMinutes);
+  });
+
+  it("同じ観光地は重複追加しない", () => {
+    const existing = clonePlan();
+    const result = addSpotToItinerary(existing, byId("glass-forest"), { day: 2, placement: "end" }, "duplicate-test");
+    expect(result.added).toBe(false);
+    expect(result.reason).toBe("duplicate");
+    expect(result.itinerary).toEqual(existing);
+  });
+});
+
+describe("負荷スコア", () => {
+  it.each([
+    [0, "かなりゆったり"], [20, "かなりゆったり"], [21, "ゆったり"], [40, "ゆったり"], [41, "標準"], [60, "標準"], [61, "やや忙しい"], [80, "やや忙しい"], [81, "詰め込みすぎ"], [100, "詰め込みすぎ"],
+  ] as const)("%i点は%s", (score, label) => expect(getStressLabel(score)).toBe(label));
+
+  it("算出したスコアと表示ラベルは同じ区分を使う", () => {
+    const day1 = clonePlan().filter((item) => item.day === 1);
+    const day2 = clonePlan().filter((item) => item.day === 2);
+    const result = assessStress(day1, day2, spots);
+    expect(result.label).toBe(getStressLabel(result.score));
+    expect(result.score).toBeGreaterThanOrEqual(0);
+    expect(result.score).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("保存データ", () => {
+  it("バージョン付きデータを復元し、並び順を正規化する", () => {
+    const state = defaultState();
+    state.itinerary = state.itinerary.map((item, index) => ({ ...item, order: 99 - index }));
+    const restored = restoreTripState(JSON.stringify(serializeTripState(state)), spots, ["自然"]);
+    expect(restored.status).toBe("restored");
+    if (restored.status !== "restored") return;
+    expect(restored.saved.version).toBe(1);
+    expect(restored.saved.data.itinerary.filter((item) => item.day === 1)[0].order).toBe(1);
+  });
+
+  it("壊れたJSONと存在しない観光地IDは初期化対象として扱う", () => {
+    expect(restoreTripState("{broken", spots, []).status).toBe("invalid");
+    const state = defaultState();
+    state.itinerary = [{ ...state.itinerary[0], type: "spot", spotId: "missing-spot" } as ItineraryItem];
+    expect(restoreTripState(JSON.stringify(serializeTripState(state)), spots, []).status).toBe("invalid");
+  });
+});
+
+describe("経路の表示と全体集計", () => {
+  it("道路経路の失敗時は簡易推計と明示する", () => {
+    expect(getRoutePresentation("fallback")).toMatchObject({ status: "estimate", label: "簡易推計" });
+  });
+
+  it("1日目・2日目・全体の合計が一致する", () => {
+    const itinerary = clonePlan();
+    const summary = calcTripSummary(itinerary.filter((item) => item.day === 1), itinerary.filter((item) => item.day === 2), spots);
+    expect(summary.distanceKm).toBeCloseTo(summary.day1.distanceKm + summary.day2.distanceKm);
+    expect(summary.predictedDriveMinutes).toBe(summary.day1.predictedDriveMinutes + summary.day2.predictedDriveMinutes);
+    expect(summary.stayMinutes).toBe(summary.day1.stayMinutes + summary.day2.stayMinutes);
+  });
+});
