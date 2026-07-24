@@ -63,6 +63,8 @@ export type ItineraryItem = {
   order: number;
   latitude?: number;
   longitude?: number;
+  /** 個人情報が入り得るため、共有時は既定で除外する。 */
+  note?: string;
 };
 
 export type RoutePoint = { latitude: number; longitude: number };
@@ -93,6 +95,15 @@ export type TripState = {
   visitTime: string;
   weather: "晴れ" | "雨" | "くもり";
   returnSettings?: ReturnSettings;
+};
+
+export type SharedTripPayload = {
+  version: 1;
+  createdAt: string;
+  trip: Pick<TripState, "itinerary" | "hotelName" | "activeFilters" | "crowdMode" | "visitTime" | "weather" | "returnSettings"> & {
+    travelDates: "2026-08-12/2026-08-13";
+    party: "大人2・中学生1・小学生1";
+  };
 };
 
 /** LocalStorage に保存する、明示的にバージョン管理された旅程データ。 */

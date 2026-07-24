@@ -2,16 +2,18 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, CarFront, CheckCircle2, ChevronDown, CircleAlert, CloudRain, ListFilter, MapPinned, Menu, RotateCcw, Search, Sparkles, Users, X } from "lucide-react";
+import { CalendarDays, CarFront, CheckCircle2, ChevronDown, CircleAlert, CloudRain, ListFilter, MapPinned, Menu, Printer, RotateCcw, Search, Share2, Sparkles, Users, X } from "lucide-react";
 import { hotelPoint, spots as baseSpots } from "@/data/spots";
 import { initialPlan, samplePlans } from "@/data/plans";
 import ItineraryPlanner from "@/components/ItineraryPlanner";
 import AddSpotDialog from "@/components/AddSpotDialog";
+import ShareDialog from "@/components/ShareDialog";
 import SpotDetail from "@/components/SpotDetail";
 import { AddSpotRequest, addSpotToItinerary } from "@/lib/itinerary";
 import { getRoutePresentation } from "@/lib/routing";
 import { calculateReturnTrip, defaultReturnSettings } from "@/lib/return-trip";
 import { crowdDetails, crowdText } from "@/lib/crowd";
+import { decodeSharedPayload, SharedDecodeResult } from "@/lib/share";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { airDistanceKm, assessStress, calcTripSummary, formatEndTime, getStressDescription, minutesToText } from "@/lib/trip";
 import { ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TripState } from "@/types";
@@ -44,6 +46,10 @@ export default function Home() {
   const [distanceReference, setDistanceReference] = useState<"hotel" | "odawara" | "last" | "selected">("hotel");
   const [spotSort, setSpotSort] = useState<"near" | "drive" | "add" | "crowd" | "child" | "rain" | "stay" | "price">("near");
   const [returnSettings, setReturnSettings] = useState<ReturnSettings>(defaultReturnSettings);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [pendingShare, setPendingShare] = useState<Extract<SharedDecodeResult, { ok: true }> | undefined>();
+  const [shareError, setShareError] = useState("");
+  const [viewingShared, setViewingShared] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -75,14 +81,23 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!storageReady) return;
+    const result = decodeSharedPayload(new URLSearchParams(window.location.search).get("plan"), baseSpots);
+    const timer = window.setTimeout(() => {
+      if (result.ok) setPendingShare(result);
+      else if (new URLSearchParams(window.location.search).has("plan")) setShareError(result.message);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady || viewingShared) return;
     try {
       const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeTripState(data)));
     } catch {
       // プライベートブラウズ等で保存できない場合も、画面上の計画は利用できる。
     }
-  }, [storageReady, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings]);
+  }, [storageReady, viewingShared, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings]);
 
   useEffect(() => {
     if (!toast) return;
@@ -142,6 +157,7 @@ export default function Home() {
   const totalStay = tripSummary.stayMinutes;
   const isRecalculating = routeModes[1] === "loading" || routeModes[2] === "loading";
   const returnTrip = calculateReturnTrip(day2, spots, returnSettings);
+  const currentTripState: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
 
   const toggleFilter = (filter: FilterKey) => setActiveFilters((current) => current.includes(filter) ? current.filter((item) => item !== filter) : [...current, filter]);
   const updateItinerary = (next: ItineraryItem[]) => {
@@ -195,6 +211,21 @@ export default function Home() {
       setToast("このブラウザでは保存できませんでした");
     }
   };
+  const applySharedTrip = (saveToDevice: boolean) => {
+    if (!pendingShare) return;
+    const shared = pendingShare.state;
+    setItinerary(shared.itinerary);
+    setHotelName(shared.hotelName);
+    setActiveFilters(shared.activeFilters as FilterKey[]);
+    setCrowdMode(shared.crowdMode);
+    setVisitTime(shared.visitTime);
+    setWeather(shared.weather);
+    setReturnSettings(shared.returnSettings ?? defaultReturnSettings);
+    setActiveDay(1); setRouteDay("all"); setRouteModes({ 1: "loading", 2: "loading" });
+    setViewingShared(!saveToDevice);
+    setPendingShare(undefined);
+    setToast(saveToDevice ? "共有旅程を自分の旅程として保存しました" : "共有旅程を一時的に表示しています");
+  };
   const openMobilePanel = (panelId: string) => {
     setMobileSheetOpen(true);
     window.setTimeout(() => document.getElementById(panelId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
@@ -211,7 +242,7 @@ export default function Home() {
         <aside className="sidebar" aria-label="旅行計画パネル">
           <button className="mobile-sheet-handle" onClick={() => setMobileSheetOpen((value) => !value)} aria-expanded={mobileSheetOpen}><span /><span>{mobileSheetOpen ? "計画パネルを閉じる" : "旅程・観光地を開く"}</span>{mobileSheetOpen ? <X size={16} /> : <Menu size={16} />}</button>
           <section className="card trip-card" id="trip-panel">
-            <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>保存</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div></div>
+            <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>保存</button><button className="text-button" onClick={() => setShareOpen(true)}><Share2 size={14} /> 共有</button><button className="text-button" onClick={() => window.print()}><Printer size={14} /> 印刷</button><button className="text-button" onClick={() => { setToast("印刷画面で、プリンターとして「PDFに保存」を選択してください。"); window.print(); }}>PDF用画面</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div></div>
             <div className="trip-facts"><span><MapPinned size={15} /> 小田原駅・昼前到着</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> 13日夕方に小田原へ</span></div>
             <label className="field-label">宿泊施設（仮地点）<input value={hotelName} onChange={(event) => setHotelName(event.target.value)} /></label>
             <div className="scenario-grid"><label>訪問時刻<select value={visitTime} onChange={(event) => setVisitTime(event.target.value)}><option>09:00</option><option>11:30</option><option>14:30</option><option>16:00</option></select></label><label>天候<select value={weather} onChange={(event) => setWeather(event.target.value as "晴れ" | "雨" | "くもり")}><option>晴れ</option><option>くもり</option><option>雨</option></select></label></div>
@@ -274,7 +305,10 @@ export default function Home() {
         <button onClick={() => openMobilePanel("itinerary-panel")}><CalendarDays size={16} /> 旅程</button>
       </nav>
       {toast && <div className="toast" role="status" aria-live="polite"><CheckCircle2 size={17} /> {toast}</div>}
+      {shareError && <div className="toast" role="alert"><CircleAlert size={17} /> {shareError}</div>}
       {addDialogSpot && <AddSpotDialog spot={addDialogSpot} itinerary={itinerary} spots={spots} returnSettings={returnSettings} onConfirm={(request) => addSpot(addDialogSpot, request)} onRemoveExisting={() => { const next = itinerary.filter((item) => !(item.type === "spot" && item.spotId === addDialogSpot.id)); updateItinerary(next); setToast(`${addDialogSpot.name}を旅程から削除しました`); }} onViewExisting={() => { const day = itinerary.find((item) => item.type === "spot" && item.spotId === addDialogSpot.id)?.day; if (day) { setActiveDay(day); setRouteDay(day); window.setTimeout(() => document.getElementById("itinerary-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); } }} onClose={() => setAddDialogSpot(undefined)} />}
+      {shareOpen && <ShareDialog state={currentTripState} onClose={() => setShareOpen(false)} onToast={setToast} />}
+      {pendingShare && <div className="dialog-backdrop"><section className="add-dialog shared-prompt" role="dialog" aria-modal="true" aria-labelledby="shared-prompt-title"><div className="dialog-heading"><div><span className="eyebrow">共有された旅程</span><h2 id="shared-prompt-title">共有旅程を開きますか？</h2></div></div><p>2026年8月12日〜13日 · 4人 · 観光地 {pendingShare.state.itinerary.filter((item) => item.type === "spot").length}件</p><p>東京駅到着予測は、適用後に現在の混雑設定で再計算します。</p><div className="dialog-actions"><button className="secondary-button" onClick={() => setPendingShare(undefined)}>現在の旅程を維持</button><button className="secondary-button" onClick={() => applySharedTrip(false)}>一時的に見る</button><button className="primary-button" onClick={() => applySharedTrip(true)}>自分の旅程として保存</button></div></section></div>}
     </main>
   );
 }

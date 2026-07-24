@@ -6,6 +6,7 @@ import { createRouteCache, getRoutePresentation, routeModeForElapsed } from "@/l
 import { recommendSpotPlacement } from "@/lib/recommendation";
 import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
 import { crowdDetails } from "@/lib/crowd";
+import { createShareUrl, createSharedPayload, decodeSharedPayload, shareUrlLengthLevel } from "@/lib/share";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { assessStress, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
 import { ItineraryItem, TripState } from "@/types";
@@ -174,5 +175,33 @@ describe("帰京と混雑の比較情報", () => {
     expect(crowd.facility.source).not.toBe("realtime");
     expect(crowd.road.level).toBeGreaterThanOrEqual(crowd.facility.level);
     expect(crowd.hourly).toHaveLength(9);
+  });
+});
+
+describe("共有URL", () => {
+  it("共有用データは既定でメモを除外して往復できる", () => {
+    const state = defaultState();
+    state.itinerary[0].note = "予約番号などの個人メモ";
+    const payload = createSharedPayload(state);
+    expect(payload.trip.itinerary[0].note).toBeUndefined();
+    const url = createShareUrl("https://example.test", "/hakone/", state);
+    const encoded = new URL(url).searchParams.get("plan");
+    const decoded = decodeSharedPayload(encoded, spots);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state.itinerary).toHaveLength(state.itinerary.length);
+  });
+
+  it("破損・未対応・存在しないスポットの共有URLを安全に拒否する", () => {
+    expect(decodeSharedPayload("broken", spots).ok).toBe(false);
+    const state = defaultState();
+    state.itinerary = [{ ...state.itinerary[0], type: "spot", spotId: "unknown" } as ItineraryItem];
+    const url = createShareUrl("https://example.test", "/", state);
+    expect(decodeSharedPayload(new URL(url).searchParams.get("plan"), spots).ok).toBe(false);
+  });
+
+  it("URL長を通常・長め・警告へ分類する", () => {
+    expect(shareUrlLengthLevel(1999)).toBe("normal");
+    expect(shareUrlLengthLevel(2000)).toBe("long");
+    expect(shareUrlLengthLevel(5000)).toBe("warning");
   });
 });

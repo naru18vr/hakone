@@ -28,3 +28,21 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   await page.reload();
   await expect(page.getByText("保存した旅程を復元しました")).toBeVisible();
 });
+
+test("共有URLを作成し、共有旅程の確認画面を表示する", async ({ page, context }) => {
+  await page.addInitScript(() => window.localStorage.clear());
+  await page.goto("/");
+  const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
+  if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
+  await page.getByRole("button", { name: "共有" }).click();
+  const dialog = page.locator(".share-dialog");
+  await dialog.getByRole("button", { name: "共有URLを作成" }).click();
+  const textArea = dialog.locator("textarea");
+  await expect(textArea).toHaveValue(/plan=/);
+  const url = await textArea.inputValue();
+  const sharedPage = await context.newPage();
+  await sharedPage.goto(url);
+  await expect(sharedPage.getByRole("dialog", { name: "共有旅程を開きますか？" })).toBeVisible();
+  await sharedPage.getByRole("button", { name: "一時的に見る" }).click();
+  await expect(sharedPage.getByText("共有旅程を一時的に表示しています")).toBeVisible();
+});
