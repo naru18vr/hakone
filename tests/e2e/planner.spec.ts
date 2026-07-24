@@ -3,7 +3,11 @@ import { expect, test } from "@playwright/test";
 test("8月13日への追加、順番変更、再読み込み、初期化", async ({ page }) => {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/");
-  await page.getByRole("button", { name: /箱根湿生花園/ }).first().click();
+  const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
+  if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
+  const wetland = page.getByRole("button", { name: /箱根湿生花園/ });
+  await expect(wetland).toHaveCount(1);
+  await wetland.click();
   const addPanel = page.locator(".add-destination");
   await addPanel.getByRole("button", { name: "8月13日" }).click();
   await page.getByRole("button", { name: "8月13日へ追加" }).click();
