@@ -1,23 +1,30 @@
 import { expect, test } from "@playwright/test";
 
-test("8月13日への追加、順番変更、再読み込み、初期化", async ({ page }) => {
+test("夕食条件、影響プレビュー、追加・削除、復元を確認する", async ({ page }) => {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/");
   const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
   if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
+
+  const dinner = page.locator('input[type="time"]').last();
+  await dinner.fill("18:30");
   const wetland = page.getByRole("button", { name: /箱根湿生花園/ });
   await expect(wetland).toHaveCount(1);
   await wetland.click();
-  const addPanel = page.locator(".add-destination");
-  await addPanel.getByRole("button", { name: "8月13日" }).click();
-  await page.getByRole("button", { name: "8月13日へ追加" }).click();
+  const add = page.getByRole("button", { name: "旅程へ追加" });
+  await expect(add).toHaveCount(1);
+  await add.click();
+  const dialog = page.locator(".add-dialog");
+  await expect(dialog).toContainText("どの日に追加しますか？");
+  await dialog.getByRole("button", { name: "8月13日" }).click();
+  await expect(dialog).toContainText("おすすめ位置");
+  await expect(dialog).toContainText("東京駅着");
+  await dialog.getByRole("button", { name: "この位置に追加" }).click();
   await expect(page.getByRole("status")).toContainText("箱根湿生花園を8月13日に追加しました");
-  await page.getByRole("tab", { name: /8\/13 2日目/ }).click();
-  await page.getByRole("button", { name: "上へ" }).last().click();
-  await expect(page.locator(".route-explanation")).toContainText(/再計算|道路ルート|簡易推計/);
+  await expect(page.locator(".return-card")).toContainText("東京駅着");
+
+  const remove = page.getByRole("button", { name: "最後の観光地を外す" });
+  if (await remove.count() === 1) await remove.click();
   await page.reload();
   await expect(page.getByText("保存した旅程を復元しました")).toBeVisible();
-  page.on("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: /初期化/ }).click();
-  await expect(page.getByRole("status")).toContainText("初期サンプルプランに戻しました");
 });

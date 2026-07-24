@@ -12,7 +12,9 @@ export const returnVerdict = (margin: number) => margin >= 60 ? "余裕あり" :
 export const calculateReturnTrip = (day2: ItineraryItem[], spots: Spot[], settings: ReturnSettings = defaultReturnSettings) => {
   const summary = calcDaySummary(day2, spots, "09:00");
   const stationArrival = 9 * 60 + summary.totalMinutes;
-  const dinner = timeToMinutes(settings.dinnerTime);
+  const rawDinner = timeToMinutes(settings.dinnerTime);
+  // 深夜帯の夕食指定では、翌日の時刻として扱い、日付またぎでも余裕計算を壊さない。
+  const dinner = rawDinner < 6 * 60 ? rawDinner + 1440 : rawDinner;
   const build = (label: ReturnCase["label"], extraDrive: number): ReturnCase => {
     const arrival = stationArrival + extraDrive;
     const completed = arrival + settings.rentalReturnMinutes;

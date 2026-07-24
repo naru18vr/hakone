@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { initialPlan } from "@/data/plans";
 import { spots } from "@/data/spots";
 import { addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
-import { createRouteCache, getRoutePresentation } from "@/lib/routing";
+import { createRouteCache, getRoutePresentation, routeModeForElapsed } from "@/lib/routing";
 import { recommendSpotPlacement } from "@/lib/recommendation";
 import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
 import { crowdDetails } from "@/lib/crowd";
@@ -120,6 +120,13 @@ describe("経路の表示と全体集計", () => {
     expect(getRoutePresentation("slow")).toMatchObject({ status: "recalculating", label: "計算に時間がかかっています" });
   });
 
+  it("経路取得は2秒で待機案内、8秒で簡易推計へ移る", () => {
+    expect(routeModeForElapsed(1999)).toBe("loading");
+    expect(routeModeForElapsed(2000)).toBe("slow");
+    expect(routeModeForElapsed(7999)).toBe("slow");
+    expect(routeModeForElapsed(8000)).toBe("fallback");
+  });
+
   it("同じ順序の道路経路はセッションキャッシュから再利用する", () => {
     const cache = createRouteCache();
     const items = clonePlan().filter((item) => item.day === 1);
@@ -148,10 +155,18 @@ describe("帰京と混雑の比較情報", () => {
 
   it("夕食余裕の判定区分を返す", () => {
     expect(returnVerdict(60)).toBe("余裕あり");
+    expect(returnVerdict(59)).toBe("おおむね問題なし");
     expect(returnVerdict(30)).toBe("おおむね問題なし");
+    expect(returnVerdict(29)).toBe("余裕少なめ");
     expect(returnVerdict(15)).toBe("余裕少なめ");
+    expect(returnVerdict(14)).toBe("かなり危険");
     expect(returnVerdict(0)).toBe("かなり危険");
     expect(returnVerdict(-1)).toBe("間に合わない可能性");
+  });
+
+  it("深夜の夕食時刻でも日付をまたいで余裕を計算する", () => {
+    const result = calculateReturnTrip(clonePlan().filter((item) => item.day === 2), spots, { ...defaultReturnSettings, dinnerTime: "00:30" });
+    expect(Number.isFinite(result.cases[0].dinnerMargin)).toBe(true);
   });
 
   it("混雑を施設・駐車場・道路と時間帯に分離する", () => {

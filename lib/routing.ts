@@ -6,6 +6,9 @@ export type RoutePresentation = {
   detail: string;
 };
 
+/** UI とテストで共有する経路取得の経過時間判定。 */
+export const routeModeForElapsed = (elapsedMs: number): RouteMode => elapsedMs >= 8000 ? "fallback" : elapsedMs >= 2000 ? "slow" : "loading";
+
 export const getRoutePresentation = (mode: RouteMode): RoutePresentation => {
   if (mode === "loading") return { status: "recalculating", label: "経路を計算中…", detail: "時刻と距離は仮表示です。" };
   if (mode === "slow") return { status: "recalculating", label: "計算に時間がかかっています", detail: "時刻と距離は仮表示です。簡易推計へ自動で切り替えます。" };
