@@ -17,6 +17,11 @@ const sanitizeItem = (item: ItineraryItem, includeNotes: boolean): ItineraryItem
   order: item.order,
   latitude: item.latitude,
   longitude: item.longitude,
+  locationName: item.locationName,
+  address: item.address,
+  isReserved: item.isReserved,
+  createdAt: item.createdAt,
+  updatedAt: item.updatedAt,
   ...(includeNotes && item.note ? { note: item.note } : {}),
 });
 
@@ -51,7 +56,7 @@ const restoreItem = (value: unknown, spotIds: Set<string>): ItineraryItem | null
   if (!isRecord(value) || typeof value.id !== "string" || !isDay(value.day) || typeof value.type !== "string" || typeof value.title !== "string" || typeof value.stayMinutes !== "number" || typeof value.order !== "number") return null;
   if (value.type === "spot" && (typeof value.spotId !== "string" || !spotIds.has(value.spotId))) return null;
   if (value.startTime !== undefined && !isTime(value.startTime)) return null;
-  return { id: value.id, day: value.day, type: value.type as ItineraryItem["type"], spotId: typeof value.spotId === "string" ? value.spotId : undefined, title: value.title, stayMinutes: value.stayMinutes, order: value.order, startTime: typeof value.startTime === "string" ? value.startTime : undefined, endTime: typeof value.endTime === "string" ? value.endTime : undefined, latitude: typeof value.latitude === "number" ? value.latitude : undefined, longitude: typeof value.longitude === "number" ? value.longitude : undefined, note: typeof value.note === "string" ? value.note : undefined };
+  return { id: value.id, day: value.day, type: value.type as ItineraryItem["type"], spotId: typeof value.spotId === "string" ? value.spotId : undefined, title: value.title, stayMinutes: value.stayMinutes, order: value.order, startTime: typeof value.startTime === "string" ? value.startTime : undefined, endTime: typeof value.endTime === "string" ? value.endTime : undefined, latitude: typeof value.latitude === "number" ? value.latitude : undefined, longitude: typeof value.longitude === "number" ? value.longitude : undefined, locationName: typeof value.locationName === "string" ? value.locationName : undefined, address: typeof value.address === "string" ? value.address : undefined, isReserved: typeof value.isReserved === "boolean" ? value.isReserved : undefined, createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : undefined, note: typeof value.note === "string" ? value.note : undefined };
 };
 
 export type SharedDecodeResult = { ok: true; payload: SharedTripPayload; state: Pick<TripState, "itinerary" | "hotelName" | "activeFilters" | "crowdMode" | "visitTime" | "weather" | "returnSettings"> } | { ok: false; message: string };

@@ -49,7 +49,8 @@ export type Spot = {
   photoKind: "placeholder" | "official" | "user" | "external";
 };
 
-export type ItemType = "spot" | "meal" | "hotel" | "break" | "start" | "goal";
+export type ItemType = "spot" | "meal" | "hotel" | "break" | "rental_car" | "transport" | "free" | "travel_note" | "start" | "goal";
+export type CustomItemType = "meal" | "break" | "hotel" | "rental_car" | "transport" | "free" | "travel_note";
 
 export type ItineraryItem = {
   id: string;
@@ -65,6 +66,11 @@ export type ItineraryItem = {
   longitude?: number;
   /** 個人情報が入り得るため、共有時は既定で除外する。 */
   note?: string;
+  locationName?: string;
+  address?: string;
+  isReserved?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type RoutePoint = { latitude: number; longitude: number };

@@ -15,6 +15,7 @@ const isReturnSettings = (value: unknown): value is ReturnSettings => isRecord(v
 function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null {
   if (!isRecord(value) || typeof value.id !== "string" || !isDay(value.day) || !isKnownItemType(value.type) || typeof value.title !== "string") return null;
   if (typeof value.stayMinutes !== "number" || !Number.isFinite(value.stayMinutes) || value.stayMinutes < 0) return null;
+  if (value.stayMinutes > 600 && value.type !== "hotel") return null;
   if (typeof value.order !== "number" || !Number.isFinite(value.order) || value.order < 1) return null;
   if (value.type === "spot" && (typeof value.spotId !== "string" || !spotIds.has(value.spotId))) return null;
   if (value.startTime !== undefined && !isTimeValue(value.startTime)) return null;
@@ -32,6 +33,12 @@ function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null
     order: value.order,
     latitude: typeof value.latitude === "number" ? value.latitude : undefined,
     longitude: typeof value.longitude === "number" ? value.longitude : undefined,
+    note: typeof value.note === "string" ? value.note : undefined,
+    locationName: typeof value.locationName === "string" ? value.locationName : undefined,
+    address: typeof value.address === "string" ? value.address : undefined,
+    isReserved: typeof value.isReserved === "boolean" ? value.isReserved : undefined,
+    createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
+    updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : undefined,
   };
 }
 
@@ -56,10 +63,18 @@ export function restoreTripState(raw: string | null, spots: Spot[], allowedFilte
   if (!Array.isArray(data.itinerary) || typeof data.hotelName !== "string" || !data.hotelName.trim() || !isDay(data.activeDay) || !isRouteDay(data.routeDay) || !Array.isArray(data.activeFilters) || (data.crowdMode !== "forecast" && data.crowdMode !== "general") || !isTimeValue(data.visitTime) || (data.weather !== "晴れ" && data.weather !== "雨" && data.weather !== "くもり")) {
     return { status: "invalid", message: "保存データの必須項目が不足しています。" };
   }
-  const itinerary = data.itinerary.map((item) => restoreItem(item, spotIds));
-  if (itinerary.some((item) => !item)) return { status: "invalid", message: "存在しない観光地または不正な旅程が含まれています。" };
-  const ids = itinerary.map((item) => item!.id);
-  if (new Set(ids).size !== ids.length) return { status: "invalid", message: "旅程の識別子が重複しています。" };
+  const restoredItems = data.itinerary.map((item) => restoreItem(item, spotIds));
+  const customTypes = ["meal", "break", "hotel", "rental_car", "transport", "free", "travel_note"];
+  // 旧保存データは従来どおり復元し、不正なカスタム予定だけは除外して全体を壊さない。
+  for (let index = 0; index < restoredItems.length; index += 1) {
+    if (restoredItems[index]) continue;
+    const raw = data.itinerary[index];
+    if (!isRecord(raw) || !customTypes.includes(String(raw.type))) return { status: "invalid", message: "存在しない観光地または不正な旅程が含まれています。" };
+  }
+  const validItems = restoredItems.filter((item): item is ItineraryItem => Boolean(item));
+  if (validItems.length === 0 && data.itinerary.length > 0) return { status: "invalid", message: "存在しない観光地または不正な旅程が含まれています。" };
+  const ids = validItems.map((item) => item.id);
+  const deduped = validItems.filter((item, index) => ids.indexOf(item.id) === index);
   const activeFilters = data.activeFilters.filter((filter): filter is string => typeof filter === "string" && allowedFilters.includes(filter));
   const selectedSpotId = typeof data.selectedSpotId === "string" && spotIds.has(data.selectedSpotId) ? data.selectedSpotId : undefined;
   return {
@@ -68,7 +83,7 @@ export function restoreTripState(raw: string | null, spots: Spot[], allowedFilte
       version: 1,
       savedAt: parsed.savedAt,
       data: {
-        itinerary: normalizeItinerary(itinerary as ItineraryItem[]),
+        itinerary: normalizeItinerary(deduped),
         hotelName: data.hotelName.trim(),
         selectedSpotId,
         activeDay: data.activeDay,

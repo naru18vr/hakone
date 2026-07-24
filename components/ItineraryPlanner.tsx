@@ -3,9 +3,10 @@
 import { DndContext, DragEndEvent, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useRef } from "react";
-import { ArrowDown, ArrowUp, BedDouble, CarFront, Coffee, GripVertical, Plus, Trash2 } from "lucide-react";
-import { moveItineraryItemToDay, normalizeItinerary } from "@/lib/itinerary";
+import { useState } from "react";
+import { ArrowDown, ArrowUp, CarFront, GripVertical, Plus, Trash2 } from "lucide-react";
+import AddCustomItemDialog from "@/components/AddCustomItemDialog";
+import { addCustomItemToItinerary, moveItineraryItemToDay, normalizeItinerary } from "@/lib/itinerary";
 import { getRoutePresentation } from "@/lib/routing";
 import { buildDaySchedule, calcDaySummary, estimateLeg, formatEndTime, minutesToText } from "@/lib/trip";
 import { ItineraryItem, ItemType, RouteMode, Spot } from "@/types";
@@ -23,12 +24,13 @@ type Props = {
   onClear: () => void;
 };
 
-const itemIcon: Record<ItemType, string> = { start: "出", goal: "着", spot: "観", meal: "食", hotel: "泊", break: "休" };
+const itemIcon: Record<ItemType, string> = { start: "出", goal: "着", spot: "観", meal: "食", hotel: "泊", break: "休", rental_car: "車", transport: "交", free: "予", travel_note: "記" };
+const itemLabel: Record<ItemType, string> = { start: "出発", goal: "到着", spot: "観光地", meal: "食事", hotel: "宿泊", break: "休憩", rental_car: "レンタカー", transport: "交通", free: "自由予定", travel_note: "移動メモ" };
 const dateLabel = (day: 1 | 2) => day === 1 ? "8月12日" : "8月13日";
 
 export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay, routeMode, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-  const generatedItemCount = useRef(0);
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const activeItems = itinerary.filter((item) => item.day === activeDay).sort((a, b) => a.order - b.order);
   const startTime = activeDay === 1 ? "11:15" : "09:00";
   const summary = calcDaySummary(activeItems, spots, startTime);
@@ -50,15 +52,6 @@ export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay
     replaceDay(arrayMove(activeItems, index, index + direction));
   };
   const remove = (id: string) => replaceDay(activeItems.filter((item) => item.id !== id));
-  const addSpecial = (type: "meal" | "break" | "hotel") => {
-    const labels = { meal: "昼食・食事", break: "休憩", hotel: "宿泊施設" };
-    const lastPoint = activeItems.at(-1);
-    generatedItemCount.current += 1;
-    replaceDay([...activeItems, {
-      id: `${type}-${activeDay}-${generatedItemCount.current}`, day: activeDay, type, title: labels[type], stayMinutes: type === "meal" ? 60 : type === "break" ? 20 : 30,
-      order: activeItems.length + 1, latitude: lastPoint?.latitude, longitude: lastPoint?.longitude,
-    }]);
-  };
   const moveDay = (id: string, targetDay: 1 | 2) => {
     onChange(moveItineraryItemToDay(itinerary, id, targetDay));
   };
@@ -97,15 +90,12 @@ export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay
         </SortableContext>
       </DndContext>
       {!activeItems.length && <p className="empty-inline">観光地一覧から追加してください。</p>}
-      <div className="quick-add">
-        <button onClick={() => addSpecial("meal")}><Plus size={14} /> 食事</button>
-        <button onClick={() => addSpecial("break")}><Coffee size={14} /> 休憩</button>
-        <button onClick={() => addSpecial("hotel")}><BedDouble size={14} /> 宿泊</button>
-      </div>
+      <div className="quick-add"><button onClick={() => setCustomDialogOpen(true)}><Plus size={14} /> 予定を追加</button></div>
       <div className={`day-summary labelled-summary ${routeMode === "loading" ? "is-recalculating" : ""}`} aria-live="polite">
         {routeMode === "loading" ? <div className="summary-calculating"><small>{dateLabel(activeDay)}の合計</small><strong>再計算中…</strong></div> : <><div><small>{dateLabel(activeDay)}の走行距離</small><strong>{summary.distanceKm.toFixed(1)} km</strong></div><div><small>通常時の運転</small><strong>{minutesToText(summary.baseDriveMinutes)}</strong></div><div><small>混雑考慮の運転</small><strong>{minutesToText(summary.predictedDriveMinutes)}</strong></div><div><small>終了予定</small><strong>{formatEndTime(startTime, summary.totalMinutes)}</strong></div></>}
       </div>
       <p className={`route-explanation ${routeMode}`}><strong>{routePresentation.label}</strong>：{routePresentation.detail} 並べ替え・移動・削除のたびに、地図、時刻、距離、負荷を更新します。</p>
+      {customDialogOpen && <AddCustomItemDialog day={activeDay} itinerary={itinerary} onAdd={(request) => { const result = addCustomItemToItinerary(itinerary, request); if (result.added) { onChange(result.itinerary); setCustomDialogOpen(false); } }} onClose={() => setCustomDialogOpen(false)} />}
     </section>
   );
 }
@@ -126,11 +116,11 @@ function SortableItem({ item, index, totalItems, startTime, arrivalOffset, onMov
     <button className="drag-handle" aria-label={`${item.title}を並べ替える`} {...attributes} {...listeners}><GripVertical size={16} /></button>
     <span className="item-order">{index + 1}</span>
     <span className={`item-type ${item.type}`}>{itemIcon[item.type]}</span>
-    <div className="item-content"><strong>{item.title}</strong><small>{formatEndTime(startTime, arrivalOffset)} 到着 · 滞在 {item.stayMinutes}分</small></div>
+    <div className="item-content"><strong>{item.title}{item.isReserved && <em>予約済み</em>}</strong><small>{formatEndTime(startTime, arrivalOffset)} 到着 · {itemLabel[item.type]} · 滞在 {item.stayMinutes}分 · {formatEndTime(startTime, arrivalOffset + item.stayMinutes)} 出発</small>{item.latitude === undefined && !(["start", "goal"] as ItemType[]).includes(item.type) && <small>地図地点なし・ルート対象外</small>}</div>
     <div className="item-buttons">
       <button aria-label="上へ" disabled={index === 0} onClick={() => onMove(index, -1)}><ArrowUp size={14} /></button>
       <button aria-label="下へ" disabled={index === totalItems - 1} onClick={() => onMove(index, 1)}><ArrowDown size={14} /></button>
-      {item.type === "spot" && <button className="day-move" aria-label={`${item.title}を${item.day === 1 ? "8月13日" : "8月12日"}へ移動`} onClick={() => onMoveDay(item.id, item.day === 1 ? 2 : 1)}>{item.day === 1 ? "8月13日へ移動" : "8月12日へ移動"}</button>}
+      {!( ["start", "goal"] as ItemType[]).includes(item.type) && <button className="day-move" aria-label={`${item.title}を${item.day === 1 ? "8月13日" : "8月12日"}へ移動`} onClick={() => onMoveDay(item.id, item.day === 1 ? 2 : 1)}>{item.day === 1 ? "8月13日へ移動" : "8月12日へ移動"}</button>}
       {!( ["start", "goal"] as ItemType[]).includes(item.type) && <button aria-label="削除" className="remove" onClick={() => onRemove(item.id)}><Trash2 size={14} /></button>}
     </div>
   </div>;

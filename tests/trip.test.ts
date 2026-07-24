@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { initialPlan } from "@/data/plans";
 import { spots } from "@/data/spots";
-import { addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
+import { addCustomItemToItinerary, addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
 import { createRouteCache, getRoutePresentation, routeModeForElapsed } from "@/lib/routing";
 import { recommendSpotPlacement } from "@/lib/recommendation";
 import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
@@ -68,6 +68,29 @@ describe("旅程の計算と編集", () => {
     expect(result.itinerary.filter((item) => item.spotId === "glass-forest")).toHaveLength(2);
   });
 
+  it.each([
+    ["meal", "小田原で昼食", 60], ["break", "休憩", 20], ["free", "自由予定", 30],
+  ] as const)("%sの地点なし予定を追加し、滞在時間だけを反映する", (type, title, stayMinutes) => {
+    const before = calcDaySummary(clonePlan().filter((item) => item.day === 1), spots, "11:15");
+    const result = addCustomItemToItinerary(clonePlan(), { type, title, day: 1, stayMinutes, placement: "end" }, `custom-${type}`);
+    expect(result.added).toBe(true);
+    const item = result.itinerary.find((entry) => entry.id === `custom-${type}`);
+    expect(item?.latitude).toBeUndefined();
+    const after = calcDaySummary(result.itinerary.filter((entry) => entry.day === 1), spots, "11:15");
+    expect(after.stayMinutes).toBe(before.stayMinutes + stayMinutes);
+  });
+
+  it("希望時刻を持つカスタム予定は待ち時間を旅程へ反映する", () => {
+    const result = addCustomItemToItinerary(clonePlan(), { type: "meal", title: "予約ランチ", day: 1, stayMinutes: 60, placement: "time", requestedArrivalTime: "16:30" }, "custom-time");
+    const summary = calcDaySummary(result.itinerary.filter((item) => item.day === 1), spots, "11:15");
+    expect(summary.waitMinutes).toBeGreaterThan(0);
+  });
+
+  it("不正なカスタム予定を追加しない", () => {
+    const result = addCustomItemToItinerary(clonePlan(), { type: "break", title: "", day: 1, stayMinutes: -1, placement: "end" });
+    expect(result.added).toBe(false);
+  });
+
   it("おすすめ追加位置は増加時間と負荷の情報を返す", () => {
     const result = recommendSpotPlacement(clonePlan(), byId("wetland-garden"), 1, spots);
     expect(result.request.day).toBe(1);
@@ -109,6 +132,14 @@ describe("保存データ", () => {
     const state = defaultState();
     state.itinerary = [{ ...state.itinerary[0], type: "spot", spotId: "missing-spot" } as ItineraryItem];
     expect(restoreTripState(JSON.stringify(serializeTripState(state)), spots, []).status).toBe("invalid");
+  });
+
+  it("旧形式の保存データへカスタム予定を追加しても復元できる", () => {
+    const state = defaultState();
+    state.itinerary.push({ id: "custom-break", day: 2, type: "break", title: "休憩", stayMinutes: 20, order: 99, note: "共有では除外" });
+    const restored = restoreTripState(JSON.stringify(serializeTripState(state)), spots, []);
+    expect(restored.status).toBe("restored");
+    if (restored.status === "restored") expect(restored.saved.data.itinerary.some((item) => item.id === "custom-break")).toBe(true);
   });
 });
 
