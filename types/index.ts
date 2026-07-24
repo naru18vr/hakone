@@ -51,6 +51,9 @@ export type Spot = {
 
 export type ItemType = "spot" | "meal" | "hotel" | "break" | "rental_car" | "transport" | "free" | "travel_note" | "start" | "goal";
 export type CustomItemType = "meal" | "break" | "hotel" | "rental_car" | "transport" | "free" | "travel_note";
+export type RentalCarAction = "pickup" | "return" | "procedure" | "refuel" | "other";
+export type TransportMode = "train" | "bus" | "walk" | "taxi" | "other";
+export type TransportAction = "board" | "exit" | "transfer" | "move";
 
 export type ItineraryItem = {
   id: string;
@@ -71,6 +74,17 @@ export type ItineraryItem = {
   isReserved?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  /** 利用者が追加した一般予定。既存の宿泊地点と区別して集計する。 */
+  isCustom?: boolean;
+  /** レンタカーの受取・返却など、種類ごとの補足。 */
+  subtype?: RentalCarAction;
+  transportMode?: TransportMode;
+  transportAction?: TransportAction;
+  departureTime?: string;
+  arrivalTime?: string;
+  destinationName?: string;
+  /** フェーズ2-C2-B3で帰着計算に利用する予約済みの意図フラグ。 */
+  useForReturnTrip?: boolean;
 };
 
 export type RoutePoint = { latitude: number; longitude: number };

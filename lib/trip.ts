@@ -2,6 +2,7 @@ import { ItineraryItem, Spot } from "@/types";
 
 const R = 6371;
 const toRad = (value: number) => (value * Math.PI) / 180;
+const effectiveStayMinutes = (item: ItineraryItem) => item.type === "hotel" && item.isCustom ? 0 : item.stayMinutes;
 
 export const airDistanceKm = (a: { latitude?: number; longitude?: number }, b: { latitude?: number; longitude?: number }) => {
   if (a.latitude === undefined || a.longitude === undefined || b.latitude === undefined || b.longitude === undefined) return 0;
@@ -47,7 +48,7 @@ export const buildDaySchedule = (items: ItineraryItem[], spots: Spot[], startTim
     const requestedArrival = item.startTime ? timeToMinutes(item.startTime) : naturalArrival;
     const arrivalMinutes = Math.max(naturalArrival, requestedArrival);
     const waitMinutes = Math.max(0, arrivalMinutes - naturalArrival);
-    cursor = arrivalMinutes + item.stayMinutes;
+    cursor = arrivalMinutes + effectiveStayMinutes(item);
     return { item, leg, arrivalMinutes, arrivalOffset: arrivalMinutes - startMinutes, waitMinutes };
   });
   return { sorted, legs, entries, waitMinutes: entries.reduce((sum, entry) => sum + entry.waitMinutes, 0), endMinutes: cursor };
@@ -60,7 +61,7 @@ export const calcDaySummary = (items: ItineraryItem[], spots: Spot[], startTime 
   const distanceKm = knownLegs.reduce((sum, leg) => sum + leg.distanceKm, 0);
   const baseDriveMinutes = knownLegs.reduce((sum, leg) => sum + leg.baseMinutes, 0);
   const predictedDriveMinutes = knownLegs.reduce((sum, leg) => sum + leg.predictedMinutes, 0);
-  const stayMinutes = sorted.reduce((sum, item) => sum + item.stayMinutes, 0);
+  const stayMinutes = sorted.reduce((sum, item) => sum + effectiveStayMinutes(item), 0);
   return { legs, distanceKm, baseDriveMinutes, predictedDriveMinutes, stayMinutes, waitMinutes: schedule.waitMinutes, endMinutes: schedule.endMinutes, totalMinutes: predictedDriveMinutes + stayMinutes + schedule.waitMinutes };
 };
 

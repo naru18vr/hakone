@@ -80,6 +80,25 @@ describe("旅程の計算と編集", () => {
     expect(after.stayMinutes).toBe(before.stayMinutes + stayMinutes);
   });
 
+  it.each([
+    ["hotel", "宿泊施設", 0], ["rental_car", "レンタカー返却", 30], ["transport", "小田原駅で乗車", 20], ["travel_note", "渋滞注意", 0],
+  ] as const)("%sをカスタム予定として追加できる", (type, title, stayMinutes) => {
+    const result = addCustomItemToItinerary(clonePlan(), { type, title, day: 2, stayMinutes, placement: "end", subtype: type === "rental_car" ? "return" : undefined, transportMode: type === "transport" ? "train" : undefined, transportAction: type === "transport" ? "board" : undefined }, `custom-${type}`);
+    expect(result.added).toBe(true);
+    const item = result.itinerary.find((entry) => entry.id === `custom-${type}`);
+    expect(item).toMatchObject({ type, title, isCustom: true });
+    expect(item?.latitude).toBeUndefined();
+  });
+
+  it("追加した宿泊は日別の滞在時間へ加算せず、その日の終了地点にする", () => {
+    const result = addCustomItemToItinerary(clonePlan(), { type: "hotel", title: "宿泊施設", day: 1, stayMinutes: 0, placement: "end" }, "custom-hotel");
+    const before = calcDaySummary(clonePlan().filter((item) => item.day === 1), spots, "11:15");
+    const day = result.itinerary.filter((item) => item.day === 1);
+    const after = calcDaySummary(day, spots, "11:15");
+    expect(after.stayMinutes).toBe(before.stayMinutes);
+    expect(day.at(-1)?.id).toBe("custom-hotel");
+  });
+
   it("希望時刻を持つカスタム予定は待ち時間を旅程へ反映する", () => {
     const result = addCustomItemToItinerary(clonePlan(), { type: "meal", title: "予約ランチ", day: 1, stayMinutes: 60, placement: "time", requestedArrivalTime: "16:30" }, "custom-time");
     const summary = calcDaySummary(result.itinerary.filter((item) => item.day === 1), spots, "11:15");
@@ -140,6 +159,18 @@ describe("保存データ", () => {
     const restored = restoreTripState(JSON.stringify(serializeTripState(state)), spots, []);
     expect(restored.status).toBe("restored");
     if (restored.status === "restored") expect(restored.saved.data.itinerary.some((item) => item.id === "custom-break")).toBe(true);
+  });
+
+  it("新しい交通・レンタカー予定の補足情報を保存データから復元する", () => {
+    const state = defaultState();
+    state.itinerary.push({ id: "rental-return", day: 2, type: "rental_car", title: "レンタカー返却", stayMinutes: 30, order: 99, isCustom: true, subtype: "return", useForReturnTrip: true });
+    state.itinerary.push({ id: "train", day: 2, type: "transport", title: "東京駅へ移動", stayMinutes: 20, order: 100, isCustom: true, transportMode: "train", transportAction: "board", departureTime: "16:30", arrivalTime: "17:10", destinationName: "東京駅" });
+    const restored = restoreTripState(JSON.stringify(serializeTripState(state)), spots, []);
+    expect(restored.status).toBe("restored");
+    if (restored.status === "restored") {
+      expect(restored.saved.data.itinerary.find((item) => item.id === "rental-return")?.subtype).toBe("return");
+      expect(restored.saved.data.itinerary.find((item) => item.id === "train")).toMatchObject({ transportMode: "train", destinationName: "東京駅" });
+    }
   });
 });
 
@@ -220,6 +251,15 @@ describe("共有URL", () => {
     const decoded = decodeSharedPayload(encoded, spots);
     expect(decoded.ok).toBe(true);
     if (decoded.ok) expect(decoded.state.itinerary).toHaveLength(state.itinerary.length);
+  });
+
+  it("共有URLでカスタム交通予定を復元する", () => {
+    const state = defaultState();
+    state.itinerary.push({ id: "share-transport", day: 2, type: "transport", title: "小田原駅で乗車", stayMinutes: 20, order: 99, isCustom: true, transportMode: "train", transportAction: "board", destinationName: "東京駅" });
+    const url = createShareUrl("https://example.test", "/", state);
+    const decoded = decodeSharedPayload(new URL(url).searchParams.get("plan"), spots);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state.itinerary.find((item) => item.id === "share-transport")).toMatchObject({ transportMode: "train", destinationName: "東京駅" });
   });
 
   it("破損・未対応・存在しないスポットの共有URLを安全に拒否する", () => {

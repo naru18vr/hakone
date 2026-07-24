@@ -1,5 +1,5 @@
 import { isKnownItemType, isTimeValue, normalizeItinerary } from "@/lib/itinerary";
-import { ItineraryItem, ReturnSettings, SavedTripState, Spot, TripState } from "@/types";
+import { ItineraryItem, RentalCarAction, ReturnSettings, SavedTripState, Spot, TransportAction, TransportMode, TripState } from "@/types";
 
 export type RestoreResult =
   | { status: "missing" }
@@ -11,6 +11,9 @@ const isDateString = (value: unknown): value is string => typeof value === "stri
 const isDay = (value: unknown): value is 1 | 2 => value === 1 || value === 2;
 const isRouteDay = (value: unknown): value is 1 | 2 | "all" => isDay(value) || value === "all";
 const isReturnSettings = (value: unknown): value is ReturnSettings => isRecord(value) && isTimeValue(value.dinnerTime) && ["東京駅", "品川駅", "新宿駅", "渋谷駅"].includes(String(value.arrivalStation)) && ["rentalReturnMinutes", "transferMinutes", "delayBufferMinutes"].every((key) => typeof value[key] === "number" && Number.isFinite(value[key]) && value[key] >= 0);
+const rentalActions: RentalCarAction[] = ["pickup", "return", "procedure", "refuel", "other"];
+const transportModes: TransportMode[] = ["train", "bus", "walk", "taxi", "other"];
+const transportActions: TransportAction[] = ["board", "exit", "transfer", "move"];
 
 function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null {
   if (!isRecord(value) || typeof value.id !== "string" || !isDay(value.day) || !isKnownItemType(value.type) || typeof value.title !== "string") return null;
@@ -39,6 +42,14 @@ function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null
     isReserved: typeof value.isReserved === "boolean" ? value.isReserved : undefined,
     createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : undefined,
+    isCustom: typeof value.isCustom === "boolean" ? value.isCustom : undefined,
+    subtype: rentalActions.includes(value.subtype as RentalCarAction) ? value.subtype as RentalCarAction : undefined,
+    transportMode: transportModes.includes(value.transportMode as TransportMode) ? value.transportMode as TransportMode : undefined,
+    transportAction: transportActions.includes(value.transportAction as TransportAction) ? value.transportAction as TransportAction : undefined,
+    departureTime: isTimeValue(value.departureTime) ? value.departureTime : undefined,
+    arrivalTime: isTimeValue(value.arrivalTime) ? value.arrivalTime : undefined,
+    destinationName: typeof value.destinationName === "string" ? value.destinationName : undefined,
+    useForReturnTrip: typeof value.useForReturnTrip === "boolean" ? value.useForReturnTrip : undefined,
   };
 }
 
