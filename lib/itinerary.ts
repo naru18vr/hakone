@@ -1,4 +1,5 @@
-import { CustomItemType, ItineraryItem, ItemType, RentalCarAction, Spot, TransportAction, TransportMode } from "@/types";
+import { CustomItemType, CustomLocation, ItineraryItem, ItemType, RentalCarAction, Spot, TransportAction, TransportMode } from "@/types";
+import { normalizeCustomLocation } from "@/lib/location";
 
 export type AddPlacement = "end" | "before" | "after" | "time";
 export type AddSpotRequest = {
@@ -76,6 +77,7 @@ export type AddCustomRequest = {
   arrivalTime?: string;
   destinationName?: string;
   useForReturnTrip?: boolean;
+  location?: CustomLocation;
 };
 
 export const addCustomItemToItinerary = (itinerary: ItineraryItem[], request: AddCustomRequest, id = `custom-${Date.now()}`) => {
@@ -87,7 +89,9 @@ export const addCustomItemToItinerary = (itinerary: ItineraryItem[], request: Ad
   const end = endingIndex < 0 ? dayItems.length : endingIndex;
   const index = request.placement === "start" ? 0 : request.placement === "before" && targetIndex >= 0 ? targetIndex : request.placement === "after" && targetIndex >= 0 ? targetIndex + 1 : end;
   const now = new Date().toISOString();
-  const item: ItineraryItem = { id, day: request.day, type: request.type, title: request.title.trim(), stayMinutes: Math.round(request.stayMinutes), order: dayItems.length + 1, startTime: request.placement === "time" && isTimeValue(request.requestedArrivalTime) ? request.requestedArrivalTime : undefined, locationName: request.locationName?.trim() || undefined, address: request.address?.trim() || undefined, note: request.note?.trim() || undefined, isReserved: request.isReserved, subtype: request.subtype, transportMode: request.transportMode, transportAction: request.transportAction, departureTime: request.departureTime, arrivalTime: request.arrivalTime, destinationName: request.destinationName?.trim() || undefined, useForReturnTrip: request.useForReturnTrip, isCustom: true, createdAt: now, updatedAt: now };
+  const location = request.location ? normalizeCustomLocation(request.location) : undefined;
+  if (request.location && !location) return { itinerary, added: false, reason: "invalid" as const };
+  const item: ItineraryItem = { id, day: request.day, type: request.type, title: request.title.trim(), stayMinutes: Math.round(request.stayMinutes), order: dayItems.length + 1, startTime: request.placement === "time" && isTimeValue(request.requestedArrivalTime) ? request.requestedArrivalTime : undefined, locationName: request.locationName?.trim() || location?.name || undefined, address: request.address?.trim() || undefined, note: request.note?.trim() || undefined, isReserved: request.isReserved, subtype: request.subtype, transportMode: request.transportMode, transportAction: request.transportAction, departureTime: request.departureTime, arrivalTime: request.arrivalTime, destinationName: request.destinationName?.trim() || undefined, useForReturnTrip: request.useForReturnTrip, location, latitude: location?.latitude, longitude: location?.longitude, isCustom: true, createdAt: now, updatedAt: now };
   const reordered = [...dayItems]; reordered.splice(index, 0, item);
   return { itinerary: normalizeItinerary([...itinerary.filter((entry) => entry.day !== request.day), ...reordered]), added: true, reason: null };
 };

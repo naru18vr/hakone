@@ -1,4 +1,5 @@
 import { isKnownItemType, isTimeValue, normalizeItinerary } from "@/lib/itinerary";
+import { isValidCoordinates, normalizeCustomLocation } from "@/lib/location";
 import { ItineraryItem, RentalCarAction, ReturnSettings, SavedTripState, Spot, TransportAction, TransportMode, TripState } from "@/types";
 
 export type RestoreResult =
@@ -22,8 +23,9 @@ function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null
   if (typeof value.order !== "number" || !Number.isFinite(value.order) || value.order < 1) return null;
   if (value.type === "spot" && (typeof value.spotId !== "string" || !spotIds.has(value.spotId))) return null;
   if (value.startTime !== undefined && !isTimeValue(value.startTime)) return null;
-  if (value.latitude !== undefined && (typeof value.latitude !== "number" || !Number.isFinite(value.latitude))) return null;
-  if (value.longitude !== undefined && (typeof value.longitude !== "number" || !Number.isFinite(value.longitude))) return null;
+  if ((value.latitude !== undefined || value.longitude !== undefined) && !isValidCoordinates(value.latitude, value.longitude)) return null;
+  const location = value.location === undefined ? undefined : normalizeCustomLocation(value.location);
+  if (value.location !== undefined && !location) return null;
   return {
     id: value.id,
     day: value.day,
@@ -34,8 +36,8 @@ function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null
     endTime: typeof value.endTime === "string" && isTimeValue(value.endTime) ? value.endTime : undefined,
     stayMinutes: value.stayMinutes,
     order: value.order,
-    latitude: typeof value.latitude === "number" ? value.latitude : undefined,
-    longitude: typeof value.longitude === "number" ? value.longitude : undefined,
+    latitude: location?.latitude ?? (typeof value.latitude === "number" ? value.latitude : undefined),
+    longitude: location?.longitude ?? (typeof value.longitude === "number" ? value.longitude : undefined),
     note: typeof value.note === "string" ? value.note : undefined,
     locationName: typeof value.locationName === "string" ? value.locationName : undefined,
     address: typeof value.address === "string" ? value.address : undefined,
@@ -50,6 +52,7 @@ function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null
     arrivalTime: isTimeValue(value.arrivalTime) ? value.arrivalTime : undefined,
     destinationName: typeof value.destinationName === "string" ? value.destinationName : undefined,
     useForReturnTrip: typeof value.useForReturnTrip === "boolean" ? value.useForReturnTrip : undefined,
+    location,
   };
 }
 

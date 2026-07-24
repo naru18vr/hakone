@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { initialPlan } from "@/data/plans";
 import { spots } from "@/data/spots";
 import { addCustomItemToItinerary, addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
+import { isValidCoordinates, locationFromSpot, normalizeCustomLocation } from "@/lib/location";
 import { createRouteCache, getRoutePresentation, routeModeForElapsed } from "@/lib/routing";
 import { recommendSpotPlacement } from "@/lib/recommendation";
 import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
@@ -99,6 +100,23 @@ describe("旅程の計算と編集", () => {
     expect(day.at(-1)?.id).toBe("custom-hotel");
   });
 
+  it("既存スポット・小田原駅相当の地点をカスタム予定へ設定して道路経路へ含める", () => {
+    const odawara = byId("odawara-station");
+    const result = addCustomItemToItinerary(clonePlan(), { type: "rental_car", title: "レンタカー受取", day: 1, stayMinutes: 30, placement: "start", location: locationFromSpot(odawara, "odawara") }, "custom-odawara");
+    expect(result.added).toBe(true);
+    const item = result.itinerary.find((entry) => entry.id === "custom-odawara");
+    expect(item).toMatchObject({ latitude: odawara.latitude, longitude: odawara.longitude, location: { source: "odawara", spotId: "odawara-station" } });
+    const summary = calcDaySummary(result.itinerary.filter((entry) => entry.day === 1), spots, "11:15");
+    expect(summary.legs.some((leg) => leg?.distanceKm === 0)).toBe(false);
+  });
+
+  it("緯度経度を範囲内だけ受け入れ、6桁精度で正規化する", () => {
+    expect(isValidCoordinates(35.25691234, 139.15571234)).toBe(true);
+    expect(isValidCoordinates(90.1, 139)).toBe(false);
+    expect(isValidCoordinates(35, -180.1)).toBe(false);
+    expect(normalizeCustomLocation({ name: "手入力", latitude: 35.25691234, longitude: 139.15571234, source: "manual" })).toMatchObject({ latitude: 35.256912, longitude: 139.155712 });
+  });
+
   it("希望時刻を持つカスタム予定は待ち時間を旅程へ反映する", () => {
     const result = addCustomItemToItinerary(clonePlan(), { type: "meal", title: "予約ランチ", day: 1, stayMinutes: 60, placement: "time", requestedArrivalTime: "16:30" }, "custom-time");
     const summary = calcDaySummary(result.itinerary.filter((item) => item.day === 1), spots, "11:15");
@@ -170,6 +188,18 @@ describe("保存データ", () => {
     if (restored.status === "restored") {
       expect(restored.saved.data.itinerary.find((item) => item.id === "rental-return")?.subtype).toBe("return");
       expect(restored.saved.data.itinerary.find((item) => item.id === "train")).toMatchObject({ transportMode: "train", destinationName: "東京駅" });
+    }
+  });
+
+  it("地点情報をLocalStorageから復元し、不正な座標のカスタム予定だけを除外する", () => {
+    const state = defaultState();
+    state.itinerary.push({ id: "located-break", day: 2, type: "break", title: "休憩", stayMinutes: 20, order: 99, isCustom: true, latitude: 35.25, longitude: 139.04, location: { name: "休憩所", latitude: 35.25, longitude: 139.04, source: "manual" } });
+    state.itinerary.push({ id: "bad-located-break", day: 2, type: "break", title: "不正", stayMinutes: 20, order: 100, isCustom: true, latitude: 91, longitude: 139, location: { latitude: 91, longitude: 139, source: "manual" } });
+    const restored = restoreTripState(JSON.stringify(serializeTripState(state)), spots, []);
+    expect(restored.status).toBe("restored");
+    if (restored.status === "restored") {
+      expect(restored.saved.data.itinerary.find((item) => item.id === "located-break")?.location?.name).toBe("休憩所");
+      expect(restored.saved.data.itinerary.some((item) => item.id === "bad-located-break")).toBe(false);
     }
   });
 });
@@ -260,6 +290,15 @@ describe("共有URL", () => {
     const decoded = decodeSharedPayload(new URL(url).searchParams.get("plan"), spots);
     expect(decoded.ok).toBe(true);
     if (decoded.ok) expect(decoded.state.itinerary.find((item) => item.id === "share-transport")).toMatchObject({ transportMode: "train", destinationName: "東京駅" });
+  });
+
+  it("共有URLで地点情報を復元し、不正な座標を安全に拒否する", () => {
+    const state = defaultState();
+    state.itinerary.push({ id: "share-location", day: 2, type: "free", title: "買い物", stayMinutes: 30, order: 99, isCustom: true, latitude: 35.25, longitude: 139.04, location: { name: "店舗", latitude: 35.25, longitude: 139.04, source: "manual" } });
+    const url = createShareUrl("https://example.test", "/", state);
+    const decoded = decodeSharedPayload(new URL(url).searchParams.get("plan"), spots);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state.itinerary.find((item) => item.id === "share-location")?.location?.name).toBe("店舗");
   });
 
   it("破損・未対応・存在しないスポットの共有URLを安全に拒否する", () => {

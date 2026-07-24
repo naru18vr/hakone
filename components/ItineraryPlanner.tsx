@@ -15,6 +15,7 @@ type RouteDay = 1 | 2 | "all";
 type Props = {
   itinerary: ItineraryItem[];
   spots: Spot[];
+  selectedSpot?: Spot;
   activeDay: 1 | 2;
   routeDay: RouteDay;
   routeMode: RouteMode;
@@ -28,7 +29,7 @@ const itemIcon: Record<ItemType, string> = { start: "出", goal: "着", spot: "�
 const itemLabel: Record<ItemType, string> = { start: "出発", goal: "到着", spot: "観光地", meal: "食事", hotel: "宿泊", break: "休憩", rental_car: "レンタカー", transport: "交通", free: "自由予定", travel_note: "移動メモ" };
 const dateLabel = (day: 1 | 2) => day === 1 ? "8月12日" : "8月13日";
 
-export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay, routeMode, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
+export default function ItineraryPlanner({ itinerary, spots, selectedSpot, activeDay, routeDay, routeMode, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const activeItems = itinerary.filter((item) => item.day === activeDay).sort((a, b) => a.order - b.order);
@@ -95,7 +96,7 @@ export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay
         {routeMode === "loading" ? <div className="summary-calculating"><small>{dateLabel(activeDay)}の合計</small><strong>再計算中…</strong></div> : <><div><small>{dateLabel(activeDay)}の走行距離</small><strong>{summary.distanceKm.toFixed(1)} km</strong></div><div><small>通常時の運転</small><strong>{minutesToText(summary.baseDriveMinutes)}</strong></div><div><small>混雑考慮の運転</small><strong>{minutesToText(summary.predictedDriveMinutes)}</strong></div><div><small>終了予定</small><strong>{formatEndTime(startTime, summary.totalMinutes)}</strong></div></>}
       </div>
       <p className={`route-explanation ${routeMode}`}><strong>{routePresentation.label}</strong>：{routePresentation.detail} 並べ替え・移動・削除のたびに、地図、時刻、距離、負荷を更新します。</p>
-      {customDialogOpen && <AddCustomItemDialog day={activeDay} itinerary={itinerary} onAdd={(request) => { const result = addCustomItemToItinerary(itinerary, request); if (result.added) { onChange(result.itinerary); setCustomDialogOpen(false); } }} onClose={() => setCustomDialogOpen(false)} />}
+      {customDialogOpen && <AddCustomItemDialog day={activeDay} itinerary={itinerary} spots={spots} selectedSpot={selectedSpot} onAdd={(request) => { const result = addCustomItemToItinerary(itinerary, request); if (result.added) { onChange(result.itinerary); setCustomDialogOpen(false); } }} onClose={() => setCustomDialogOpen(false)} />}
     </section>
   );
 }

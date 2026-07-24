@@ -54,6 +54,14 @@ export type CustomItemType = "meal" | "break" | "hotel" | "rental_car" | "transp
 export type RentalCarAction = "pickup" | "return" | "procedure" | "refuel" | "other";
 export type TransportMode = "train" | "bus" | "walk" | "taxi" | "other";
 export type TransportAction = "board" | "exit" | "transfer" | "move";
+export type LocationSource = "map" | "spot" | "odawara" | "hotel" | "selected" | "manual";
+export type CustomLocation = {
+  name?: string;
+  latitude: number;
+  longitude: number;
+  source: LocationSource;
+  spotId?: string;
+};
 
 export type ItineraryItem = {
   id: string;
@@ -85,6 +93,11 @@ export type ItineraryItem = {
   destinationName?: string;
   /** フェーズ2-C2-B3で帰着計算に利用する予約済みの意図フラグ。 */
   useForReturnTrip?: boolean;
+  /** カスタム予定の代表地点。B2ではこの地点を道路ルートに利用する。 */
+  location?: CustomLocation;
+  /** 将来の交通予定の二地点化に備えた任意フィールド。 */
+  origin?: CustomLocation;
+  destination?: CustomLocation;
 };
 
 export type RoutePoint = { latitude: number; longitude: number };
