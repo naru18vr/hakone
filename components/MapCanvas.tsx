@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
-import { ItineraryItem, RouteResult, Spot } from "@/types";
+import { ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
+type RouteModes = Record<1 | 2, RouteMode>;
 type Props = {
   spots: Spot[];
   selectedSpot?: Spot;
   routeDay: 1 | 2 | "all";
   onSelectSpot: (spot: Spot) => void;
   itinerary: ItineraryItem[];
+  onRouteModesChange?: (modes: RouteModes) => void;
 };
 
 const crowdColor: Record<Spot["crowdLevel"], string> = { 1: "#1f9d6a", 2: "#e0a100", 3: "#e45b2b", 4: "#b52d36" };
@@ -32,9 +34,9 @@ function FitToMarkers({ points }: { points: [number, number][] }) {
   return null;
 }
 
-export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary }: Props) {
+export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary, onRouteModesChange }: Props) {
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
-  const [routeStatus, setRouteStatus] = useState<"routing" | "fallback" | "loading">("loading");
+  const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
   const dayItems = useMemo(() => ({
     1: itinerary.filter((item) => item.day === 1 && item.latitude !== undefined && item.longitude !== undefined).sort((a, b) => a.order - b.order),
     2: itinerary.filter((item) => item.day === 2 && item.latitude !== undefined && item.longitude !== undefined).sort((a, b) => a.order - b.order),
@@ -65,19 +67,32 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
       }));
       if (disposed) return;
       const next = Object.fromEntries(entries) as Partial<Record<1 | 2, RouteResult>>;
+      const nextModes: RouteModes = { 1: next[1]?.source ?? "fallback", 2: next[2]?.source ?? "fallback" };
       setRoutes(next);
-      setRouteStatus(entries.every(([, route]) => route.source === "routing") ? "routing" : "fallback");
+      setRouteModes(nextModes);
+      onRouteModesChange?.(nextModes);
     };
-    setRouteStatus("loading");
+    const loadingModes: RouteModes = { 1: "loading", 2: "loading" };
+    setRouteModes(loadingModes);
+    onRouteModesChange?.(loadingModes);
     void load();
     return () => { disposed = true; };
-  }, [dayItems]);
+  }, [dayItems, onRouteModesChange]);
 
   const fitPoints = useMemo(() => [
     ...spots.map((spot) => [spot.latitude, spot.longitude] as [number, number]),
     ...itinerary.filter((item) => item.latitude !== undefined && (routeDay === "all" || item.day === routeDay)).map((item) => [item.latitude!, item.longitude!] as [number, number]),
   ], [spots, itinerary, routeDay]);
   const visibleDays = routeDay === "all" ? [1, 2] as const : [routeDay] as const;
+  const visibleModes = visibleDays.map((day) => routeModes[day]);
+  const routeStatus: RouteMode = visibleModes.some((mode) => mode === "loading") ? "loading" : visibleModes.every((mode) => mode === "routing") ? "routing" : "fallback";
+  const routeModeText = routeStatus === "loading"
+    ? "道路経路を取得中…"
+    : routeStatus === "routing"
+      ? `${routeDay === "all" ? "全日程" : `${routeDay}日目`}の道路ルートを表示`
+      : routeDay === "all" && routeModes[1] !== routeModes[2]
+        ? "一部は道路ルート、一部は簡易線（API未接続）"
+        : "簡易ルートを表示（道路経路API未接続）";
 
   return (
     <section className="map-shell" aria-label="箱根周辺の地図">
@@ -109,7 +124,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
       </div>
       <div className={`route-mode ${routeStatus}`}>
-        {routeStatus === "loading" ? "経路を取得中…" : routeStatus === "routing" ? `${routeDay === "all" ? "全日程" : `${routeDay}日目`}の道路ルートを表示` : "簡易ルートを表示（経路API未接続）"}
+        {routeModeText}
       </div>
       {selectedSpot && <div className="map-selected">選択中：{selectedSpot.name}</div>}
     </section>

@@ -61,6 +61,9 @@ export type RouteResult = {
   source: "routing" | "fallback";
 };
 
+/** 道路経路の取得状況。fallback は道路形状を取得できず、直線の参考線を表示している状態。 */
+export type RouteMode = RouteResult["source"] | "loading";
+
 export type SamplePlan = {
   id: string;
   name: string;

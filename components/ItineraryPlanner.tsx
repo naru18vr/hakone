@@ -5,7 +5,7 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowDown, ArrowUp, BedDouble, CarFront, Coffee, GripVertical, Plus, Trash2 } from "lucide-react";
 import { calcDaySummary, estimateLeg, formatEndTime, minutesToText } from "@/lib/trip";
-import { ItineraryItem, ItemType, Spot } from "@/types";
+import { ItineraryItem, ItemType, RouteMode, Spot } from "@/types";
 
 type RouteDay = 1 | 2 | "all";
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
   spots: Spot[];
   activeDay: 1 | 2;
   routeDay: RouteDay;
+  routeMode: RouteMode;
   onActiveDayChange: (day: 1 | 2) => void;
   onRouteDayChange: (day: RouteDay) => void;
   onChange: (items: ItineraryItem[]) => void;
@@ -22,7 +23,7 @@ type Props = {
 const itemIcon: Record<ItemType, string> = { start: "出", goal: "着", spot: "観", meal: "食", hotel: "泊", break: "休" };
 const dateLabel = (day: 1 | 2) => day === 1 ? "8月12日" : "8月13日";
 
-export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
+export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay, routeMode, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const activeItems = itinerary.filter((item) => item.day === activeDay).sort((a, b) => a.order - b.order);
   const summary = calcDaySummary(activeItems, spots);
@@ -85,7 +86,7 @@ export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay
         <SortableContext items={activeItems.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <ol className="itinerary-list detailed-itinerary">
             {entries.map(({ item, arrivalOffset, incomingLeg }, index) => <li key={item.id} className="itinerary-group">
-              {incomingLeg && <TravelLeg leg={incomingLeg} departure={formatEndTime(startTime, entries[index - 1].arrivalOffset + entries[index - 1].item.stayMinutes)} arrival={formatEndTime(startTime, arrivalOffset)} />}
+              {incomingLeg && <TravelLeg leg={incomingLeg} departure={formatEndTime(startTime, entries[index - 1].arrivalOffset + entries[index - 1].item.stayMinutes)} arrival={formatEndTime(startTime, arrivalOffset)} routeMode={routeMode} />}
               <SortableItem item={item} index={index} totalItems={activeItems.length} startTime={startTime} arrivalOffset={arrivalOffset} onMove={move} onRemove={remove} onMoveDay={moveDay} />
             </li>)}
           </ol>
@@ -103,7 +104,13 @@ export default function ItineraryPlanner({ itinerary, spots, activeDay, routeDay
         <div><small>混雑考慮の運転</small><strong>{minutesToText(summary.predictedDriveMinutes)}</strong></div>
         <div><small>終了予定</small><strong>{formatEndTime(startTime, summary.totalMinutes)}</strong></div>
       </div>
-      <p className="route-explanation">並べ替え・移動・削除のたびに、地図、時刻、距離、負荷を再計算します。</p>
+      <p className={`route-explanation ${routeMode}`}>
+        {routeMode === "routing"
+          ? "道路経路をもとに地図を更新しています。並べ替え・移動・削除のたびに、時刻、距離、負荷を再計算します。"
+          : routeMode === "loading"
+            ? "道路経路を取得中です。表示中の時刻と距離は安全側の簡易推計です。"
+            : "道路経路を取得できないため、地図は直線の簡易線、時刻と距離は安全側の簡易推計です。"}
+      </p>
     </section>
   );
 }
@@ -113,9 +120,10 @@ function getLeg(from: ItineraryItem, to: ItineraryItem, spots: Spot[]) {
   return estimateLeg(from, to, 1 + Math.max(0, crowd - 1) * 0.08);
 }
 
-function TravelLeg({ leg, departure, arrival }: { leg: ReturnType<typeof estimateLeg>; departure: string; arrival: string }) {
+function TravelLeg({ leg, departure, arrival, routeMode }: { leg: ReturnType<typeof estimateLeg>; departure: string; arrival: string; routeMode: RouteMode }) {
   const road = leg.predictedMinutes >= leg.baseMinutes * 1.2 ? "混雑" : leg.predictedMinutes > leg.baseMinutes ? "やや混雑" : "比較的スムーズ";
-  return <div className={`travel-leg ${road}`}><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着</strong><span>車 通常 {leg.baseMinutes}分 · 混雑考慮 {leg.predictedMinutes}分 · {leg.distanceKm.toFixed(1)}km</span></div><small>道路：{road}</small></div>;
+  const estimateLabel = routeMode === "routing" ? "混雑予測込み" : "簡易推計";
+  return <div className={`travel-leg ${road} ${routeMode}`}><CarFront size={14} /><div><strong>{departure} 出発 → {arrival} 到着</strong><span>車 通常 {leg.baseMinutes}分 · {estimateLabel} {leg.predictedMinutes}分 · {leg.distanceKm.toFixed(1)}km</span>{routeMode !== "routing" && <em>{routeMode === "loading" ? "道路経路を取得中" : "道路経路未取得：直線距離を基にした推計"}</em>}</div><small>道路：{road}</small></div>;
 }
 
 function SortableItem({ item, index, totalItems, startTime, arrivalOffset, onMove, onRemove, onMoveDay }: {

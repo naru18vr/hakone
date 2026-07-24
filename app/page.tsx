@@ -8,7 +8,7 @@ import { initialPlan, samplePlans } from "@/data/plans";
 import ItineraryPlanner from "@/components/ItineraryPlanner";
 import SpotDetail, { AddRequest } from "@/components/SpotDetail";
 import { airDistanceKm, assessStress, calcDaySummary, formatEndTime, minutesToText } from "@/lib/trip";
-import { CrowdSource, ItineraryItem, SamplePlan, Spot } from "@/types";
+import { CrowdSource, ItineraryItem, RouteMode, SamplePlan, Spot } from "@/types";
 
 const MapCanvas = dynamic(() => import("@/components/MapCanvas"), { ssr: false, loading: () => <div className="map-loading">地図を準備しています…</div> });
 
@@ -16,6 +16,22 @@ type FilterKey = "美術館" | "自然" | "絶景" | "湖" | "神社" | "子ど�
 const primaryFilters: FilterKey[] = ["混雑が少ない", "子ども向け", "雨天対応", "宿泊施設から近い", "滞在1時間以内"];
 const advancedFilters: FilterKey[] = ["美術館", "自然", "絶景", "湖", "神社", "駐車場あり", "無料", "飲食店あり", "トイレあり"];
 const crowdSourceLabel: Record<CrowdSource, string> = { realtime: "リアルタイム", forecast: "予測", general: "一般傾向", manual: "手動" };
+const STORAGE_KEY = "hakone-yurutabi-planner:v1";
+
+type RouteModes = Record<1 | 2, RouteMode>;
+type SavedTrip = {
+  version: 1;
+  itinerary: ItineraryItem[];
+  hotelName: string;
+  selectedSpotId?: string;
+  activeDay: 1 | 2;
+  routeDay: 1 | 2 | "all";
+  activeFilters: FilterKey[];
+  crowdMode: "forecast" | "general";
+  visitTime: string;
+  weather: "晴れ" | "雨" | "くもり";
+  savedAt: string;
+};
 
 export default function Home() {
   const [itinerary, setItinerary] = useState<ItineraryItem[]>(initialPlan.itinerary);
@@ -31,6 +47,57 @@ export default function Home() {
   const [autoPlansVisible, setAutoPlansVisible] = useState(false);
   const [toast, setToast] = useState("");
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
+  const [storageReady, setStorageReady] = useState(false);
+
+  const createSavedTrip = (): SavedTrip => ({
+    version: 1,
+    itinerary,
+    hotelName,
+    selectedSpotId: selectedSpot?.id,
+    activeDay,
+    routeDay,
+    activeFilters,
+    crowdMode,
+    visitTime,
+    weather,
+    savedAt: new Date().toISOString(),
+  });
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<SavedTrip>;
+      if (saved.version !== 1 || !Array.isArray(saved.itinerary)) return;
+      setItinerary(saved.itinerary);
+      if (typeof saved.hotelName === "string") setHotelName(saved.hotelName);
+      if (saved.activeDay === 1 || saved.activeDay === 2) setActiveDay(saved.activeDay);
+      if (saved.routeDay === 1 || saved.routeDay === 2 || saved.routeDay === "all") setRouteDay(saved.routeDay);
+      if (Array.isArray(saved.activeFilters)) {
+        const allowed = [...primaryFilters, ...advancedFilters];
+        setActiveFilters(saved.activeFilters.filter((filter): filter is FilterKey => allowed.includes(filter as FilterKey)));
+      }
+      if (saved.crowdMode === "forecast" || saved.crowdMode === "general") setCrowdMode(saved.crowdMode);
+      if (typeof saved.visitTime === "string") setVisitTime(saved.visitTime);
+      if (saved.weather === "晴れ" || saved.weather === "雨" || saved.weather === "くもり") setWeather(saved.weather);
+      if (typeof saved.selectedSpotId === "string") setSelectedSpot(baseSpots.find((spot) => spot.id === saved.selectedSpotId));
+      setToast("保存した旅程を復元しました");
+    } catch {
+      // 保存データが壊れていても、初期サンプルで安全に続行する。
+    } finally {
+      setStorageReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(createSavedTrip()));
+    } catch {
+      // プライベートブラウズ等で保存できない場合も、画面上の計画は利用できる。
+    }
+  }, [storageReady, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather]);
 
   useEffect(() => {
     if (!toast) return;
@@ -68,7 +135,7 @@ export default function Home() {
   const summary1 = calcDaySummary(day1, spots);
   const summary2 = calcDaySummary(day2, spots);
   const stress = assessStress(day1, day2, spots);
-  const loadScore = Math.min(100, Math.round(stress.score * 2));
+  const loadScore = stress.score;
   const totalDistance = summary1.distanceKm + summary2.distanceKm;
   const totalDrive = summary1.predictedDriveMinutes + summary2.predictedDriveMinutes;
   const totalStay = summary1.stayMinutes + summary2.stayMinutes;
@@ -104,7 +171,29 @@ export default function Home() {
     setSelectedSpot(spots.find((spot) => spot.id === firstSpot?.spotId));
     setToast(`${plan.name}を読み込みました`);
   };
-  const resetPlan = () => loadPlan(initialPlan);
+  const resetPlan = () => {
+    if (!window.confirm("保存中の旅程を初期サンプルプランへ戻しますか？ この操作は元に戻せません。")) return;
+    try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* 保存不可の環境では何もしない */ }
+    loadPlan(initialPlan);
+    setToast("初期サンプルプランに戻しました");
+  };
+  const clearItinerary = () => {
+    if (!itinerary.length || !window.confirm("旅程をすべて削除しますか？")) return;
+    setItinerary([]);
+    setToast("旅程をすべて削除しました");
+  };
+  const saveTrip = () => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(createSavedTrip()));
+      setToast("この端末に旅程を保存しました");
+    } catch {
+      setToast("このブラウザでは保存できませんでした");
+    }
+  };
+  const openMobilePanel = (panelId: string) => {
+    setMobileSheetOpen(true);
+    window.setTimeout(() => document.getElementById(panelId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
+  };
 
   return (
     <main>
@@ -116,8 +205,8 @@ export default function Home() {
       <div className={`app-grid ${mobileSheetOpen ? "sheet-open" : ""}`}>
         <aside className="sidebar" aria-label="旅行計画パネル">
           <button className="mobile-sheet-handle" onClick={() => setMobileSheetOpen((value) => !value)} aria-expanded={mobileSheetOpen}><span /><span>{mobileSheetOpen ? "計画パネルを閉じる" : "旅程・観光地を開く"}</span>{mobileSheetOpen ? <X size={16} /> : <Menu size={16} />}</button>
-          <section className="card trip-card">
-            <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div>
+          <section className="card trip-card" id="trip-panel">
+            <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>保存</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div></div>
             <div className="trip-facts"><span><MapPinned size={15} /> 小田原駅・昼前到着</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> 13日夕方に小田原へ</span></div>
             <label className="field-label">宿泊施設（仮地点）<input value={hotelName} onChange={(event) => setHotelName(event.target.value)} /></label>
             <div className="scenario-grid"><label>訪問時刻<select value={visitTime} onChange={(event) => setVisitTime(event.target.value)}><option>09:00</option><option>11:30</option><option>14:30</option><option>16:00</option></select></label><label>天候<select value={weather} onChange={(event) => setWeather(event.target.value as "晴れ" | "雨" | "くもり")}><option>晴れ</option><option>くもり</option><option>雨</option></select></label></div>
@@ -125,7 +214,7 @@ export default function Home() {
             <p className="source-note"><CircleAlert size={14} /> {crowdMode === "forecast" ? "お盆・時間帯・天候を用いた予測です。リアルタイム情報ではありません。" : "一般的な混雑傾向です。リアルタイム情報ではありません。"}</p>
           </section>
 
-          <section className="card spots-card">
+          <section className="card spots-card" id="spots-panel">
             <div className="section-heading"><div><span className="eyebrow">観光地</span><h2>行き先を探す</h2></div><span className="count-badge">{visibleSpots.length}件</span></div>
             <label className="search-box"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="観光地・条件を検索" /></label>
             <div className="filter-heading"><ListFilter size={15} /> 絞り込み</div>
@@ -136,13 +225,14 @@ export default function Home() {
 
           <SpotDetail spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onAdd={addSpot} onClose={() => setSelectedSpot(undefined)} />
 
-          <ItineraryPlanner itinerary={itinerary} spots={spots} activeDay={activeDay} routeDay={routeDay} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={setItinerary} onClear={() => setItinerary([])} />
+          <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={setItinerary} onClear={clearItinerary} /></div>
 
           <section className={`card stress-card ${stress.label}`}>
             <div className="section-heading"><div><span className="eyebrow">旅程の負荷</span><h2>{stress.label}</h2></div><span className="stress-score">{loadScore} / 100</span></div>
             <div className="stress-gauge" aria-label={`旅程の負荷 ${loadScore}点`}><span style={{ width: `${loadScore}%` }} /><i style={{ left: `${loadScore}%` }} /></div>
             <div className="stress-scale"><span>ゆったり</span><span>忙しい</span></div>
             <p>移動、混雑、歩く量、休憩の有無を用いた安全側の目安です。</p>
+            <div className="stress-breakdown" aria-label="負荷スコアの内訳">{stress.breakdown.map((item) => <div key={item.label}><span>{item.label}<small>{item.note}</small></span><strong>{item.score}<em>/{item.max}</em></strong></div>)}</div>
             <ul>{stress.suggestions.map((suggestion) => <li key={suggestion}><CheckCircle2 size={15} /> {suggestion}</li>)}</ul>
           </section>
 
@@ -151,6 +241,7 @@ export default function Home() {
             <SummaryBlock title="8月12日" summary={summary1} />
             <SummaryBlock title="8月13日" summary={summary2} />
             <div className="whole-trip"><span>旅行全体</span><strong>{totalDistance.toFixed(1)} km · 運転 {minutesToText(totalDrive)} · 滞在 {minutesToText(totalStay)}</strong><small>13日の小田原駅到着目安 {formatEndTime("09:00", summary2.totalMinutes)}</small></div>
+            <p className="route-source-note">地図経路：1日目 {routeModeLabel(routeModes[1])} ／ 2日目 {routeModeLabel(routeModes[2])}</p>
           </section>
 
           <details className="optional-tools"><summary><Sparkles size={15} /> サンプルプランを切り替える</summary><div className="auto-plan-grid">{autoPlanCards(samplePlans).map(({ title, description, plan }) => <button className="auto-plan-card" key={title} onClick={() => loadPlan(plan)}><strong>{title}</strong><span>{description}</span></button>)}</div></details>
@@ -158,12 +249,21 @@ export default function Home() {
         </aside>
 
         <section className="map-column">
-          <MapCanvas spots={visibleSpots} selectedSpot={selectedSpot} routeDay={routeDay} onSelectSpot={(spot) => { setSelectedSpot(spot); setMobileSheetOpen(true); }} itinerary={itinerary} />
+          <MapCanvas spots={visibleSpots} selectedSpot={selectedSpot} routeDay={routeDay} onSelectSpot={(spot) => { setSelectedSpot(spot); setMobileSheetOpen(true); }} itinerary={itinerary} onRouteModesChange={setRouteModes} />
         </section>
       </div>
+      <nav className={`mobile-bottom-nav ${mobileSheetOpen ? "is-open" : ""}`} aria-label="モバイル用ナビゲーション">
+        <button onClick={() => setMobileSheetOpen(false)}><MapPinned size={16} /> 地図</button>
+        <button onClick={() => openMobilePanel("spots-panel")}><Search size={16} /> 行き先</button>
+        <button onClick={() => openMobilePanel("itinerary-panel")}><CalendarDays size={16} /> 旅程</button>
+      </nav>
       {toast && <div className="toast" role="status"><CheckCircle2 size={17} /> {toast}</div>}
     </main>
   );
+}
+
+function routeModeLabel(mode: RouteMode) {
+  return mode === "routing" ? "道路ルート" : mode === "loading" ? "取得中" : "簡易線・推計";
 }
 
 function SummaryBlock({ title, summary }: { title: string; summary: ReturnType<typeof calcDaySummary> }) {

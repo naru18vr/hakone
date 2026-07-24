@@ -43,21 +43,52 @@ export const formatEndTime = (start: string, minutes: number) => {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
 
-export type StressResult = { label: "ゆったり" | "標準" | "やや忙しい" | "詰め込みすぎ"; score: number; suggestions: string[] };
+export type StressBreakdown = {
+  label: string;
+  score: number;
+  max: number;
+  note: string;
+};
+
+export type StressResult = {
+  label: "かなりゆったり" | "ゆったり" | "標準" | "やや忙しい" | "詰め込みすぎ";
+  score: number;
+  breakdown: StressBreakdown[];
+  suggestions: string[];
+};
 
 export const assessStress = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[]): StressResult => {
   const allDays = [day1, day2].map((day) => calcDaySummary(day, spots));
-  const total = allDays.reduce((sum, day) => sum + day.predictedDriveMinutes, 0);
+  const totalDrive = allDays.reduce((sum, day) => sum + day.predictedDriveMinutes, 0);
   const day2Spots = day2.filter((item) => item.type === "spot");
-  const crowded = day2Spots.filter((item) => (spots.find((spot) => spot.id === item.spotId)?.crowdLevel ?? 1) >= 4);
-  const walking = [...day1, ...day2].filter((item) => item.type === "spot").reduce((sum, item) => sum + (spots.find((spot) => spot.id === item.spotId)?.walkingLevel ?? 0), 0);
-  const score = Math.round(total / 15 + Math.max(...allDays.map((day) => day.totalMinutes)) / 75 + day2Spots.length * 2 + crowded.length * 3 + walking / 4);
+  const spotItems = [...day1, ...day2].filter((item) => item.type === "spot");
+  const crowded = spotItems.filter((item) => (spots.find((spot) => spot.id === item.spotId)?.crowdLevel ?? 1) >= 4);
+  const parkingRisk = spotItems.filter((item) => {
+    const spot = spots.find((candidate) => candidate.id === item.spotId);
+    return (spot?.crowdLevel ?? 1) >= 3 && (spot?.parkingSpaces?.includes("少") || spot?.parkingSpaces?.includes("台"));
+  });
+  const walking = spotItems.reduce((sum, item) => sum + (spots.find((spot) => spot.id === item.spotId)?.walkingLevel ?? 0), 0);
+  const busiestDay = Math.max(...allDays.map((day) => day.totalMinutes));
+  const hasBreak = [day1, day2].some((day) => day.some((item) => item.type === "break"));
+  const day2ReturnMinutes = allDays[1].totalMinutes;
+
+  const breakdown: StressBreakdown[] = [
+    { label: "移動負荷", score: Math.min(22, Math.round(totalDrive / 8)), max: 22, note: `混雑考慮の運転 ${minutesToText(totalDrive)}` },
+    { label: "道路混雑リスク", score: Math.min(15, crowded.length * 4 + spotItems.filter((item) => (spots.find((spot) => spot.id === item.spotId)?.crowdLevel ?? 1) === 3).length * 2), max: 15, note: `混雑が高い候補 ${crowded.length}件` },
+    { label: "駐車場待ちリスク", score: Math.min(10, parkingRisk.length * 3), max: 10, note: `混雑しやすい駐車場 ${parkingRisk.length}件` },
+    { label: "徒歩負荷", score: Math.min(10, Math.round(walking / 2)), max: 10, note: `歩く量の合計 ${walking} / 5段階` },
+    { label: "予定の詰まり", score: Math.min(15, Math.max(0, Math.round((busiestDay - 220) / 20)) + Math.max(0, spotItems.length - 4) * 2), max: 15, note: `最も長い日 ${minutesToText(busiestDay)}` },
+    { label: "休憩不足", score: hasBreak ? 1 : 8, max: 8, note: hasBreak ? "休憩を予定済み" : "独立した休憩が未設定" },
+    { label: "子どもの疲れ", score: Math.min(8, Math.round(walking / 5) + crowded.length * 2), max: 8, note: "歩く量と混雑を加味" },
+    { label: "帰京時刻への余裕", score: Math.min(12, Math.max(0, Math.round((day2ReturnMinutes - 300) / 18))), max: 12, note: `2日目の行程 ${minutesToText(day2ReturnMinutes)}` },
+  ];
+  const score = Math.min(100, breakdown.reduce((sum, item) => sum + item.score, 0));
   const suggestions: string[] = [];
   if (day2.some((item) => item.spotId === "owakudani")) suggestions.push("大涌谷を外すと、混雑時の待機と移動を約40分以上減らせる可能性があります。");
   if (day2.some((item) => item.spotId === "pola") && day2.some((item) => item.spotId === "wetland-garden")) suggestions.push("ポーラ美術館と湿生花園は仙石原側でまとめると、山道の往復を抑えられます。");
   if (!day2.some((item) => item.type === "break")) suggestions.push("午後に15〜20分の休憩を一つ入れると、子どもの疲労と運転の集中切れを抑えやすくなります。");
   if (crowded.length > 0) suggestions.push("混雑度が高い地点は9時台に到着するか、当日の公式案内を見て代替候補へ切り替えてください。");
   if (suggestions.length === 0) suggestions.push("現状は仙石原周辺でまとまっています。昼食を11時30分頃にすると混雑を避けやすいです。");
-  const label = score <= 26 ? "ゆったり" : score <= 37 ? "標準" : score <= 49 ? "やや忙しい" : "詰め込みすぎ";
-  return { label, score, suggestions: suggestions.slice(0, 3) };
+  const label = score <= 18 ? "かなりゆったり" : score <= 34 ? "ゆったり" : score <= 52 ? "標準" : score <= 70 ? "やや忙しい" : "詰め込みすぎ";
+  return { label, score, breakdown, suggestions: suggestions.slice(0, 3) };
 };
