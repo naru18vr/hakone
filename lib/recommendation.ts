@@ -17,9 +17,10 @@ export const recommendSpotPlacement = (itinerary: ItineraryItem[], spot: Spot, d
   const dayItems = itinerary.filter((item) => item.day === day).sort((a, b) => a.order - b.order);
   const beforeSummary = calcDaySummary(dayItems, spots, day === 1 ? "11:15" : "09:00");
   const beforeStress = assessStress(itinerary.filter((item) => item.day === 1), itinerary.filter((item) => item.day === 2), spots).score;
+  const insertableAfter = dayItems.filter((item) => item.type !== "goal" && !(day === 1 && item.type === "hotel"));
   const candidates: AddSpotRequest[] = [
     { day, placement: "end", allowDuplicate: true },
-    ...dayItems.map((item) => ({ day, placement: "after" as const, targetId: item.id, allowDuplicate: true })),
+    ...insertableAfter.map((item) => ({ day, placement: "after" as const, targetId: item.id, allowDuplicate: true })),
   ];
   const evaluated = candidates.map((request) => {
     const next = addSpotToItinerary(itinerary, spot, request, `preview-${spot.id}`);
