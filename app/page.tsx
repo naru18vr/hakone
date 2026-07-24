@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, CarFront, CheckCircle2, ChevronDown, CircleAlert, CloudRain, ListFilter, MapPinned, Menu, Printer, RotateCcw, Search, Share2, Sparkles, Users, X } from "lucide-react";
 import { hotelPoint, spots as baseSpots } from "@/data/spots";
 import { initialPlan, samplePlans } from "@/data/plans";
@@ -16,7 +16,7 @@ import { crowdDetails, crowdText } from "@/lib/crowd";
 import { decodeSharedPayload, SharedDecodeResult } from "@/lib/share";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { airDistanceKm, assessStress, calcTripSummary, formatEndTime, getStressDescription, minutesToText } from "@/lib/trip";
-import { ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TripState } from "@/types";
+import { CustomLocation, ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TripState } from "@/types";
 
 const MapCanvas = dynamic(() => import("@/components/MapCanvas"), { ssr: false, loading: () => <div className="map-loading">地図を準備しています…</div> });
 
@@ -50,6 +50,9 @@ export default function Home() {
   const [pendingShare, setPendingShare] = useState<Extract<SharedDecodeResult, { ok: true }> | undefined>();
   const [shareError, setShareError] = useState("");
   const [viewingShared, setViewingShared] = useState(false);
+  const [locationPickMode, setLocationPickMode] = useState(false);
+  const [locationPickCandidate, setLocationPickCandidate] = useState<CustomLocation | undefined>(undefined);
+  const locationPickCommit = useRef<((location: CustomLocation) => void) | undefined>(undefined);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -104,6 +107,12 @@ export default function Home() {
     const timer = window.setTimeout(() => setToast(""), 3200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape" && locationPickMode) { event.preventDefault(); setLocationPickMode(false); setLocationPickCandidate(undefined); locationPickCommit.current = undefined; } };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [locationPickMode]);
 
   const spots = useMemo(() => baseSpots.map((spot) => {
     if (crowdMode === "general") return spot;
@@ -163,6 +172,20 @@ export default function Home() {
   const updateItinerary = (next: ItineraryItem[]) => {
     setRouteModes({ 1: "loading", 2: "loading" });
     setItinerary(next);
+  };
+  const beginLocationPick = (commit: (location: CustomLocation) => void) => {
+    locationPickCommit.current = commit;
+    setLocationPickCandidate(undefined);
+    setLocationPickMode(true);
+    setMobileSheetOpen(false);
+  };
+  const cancelLocationPick = () => { setLocationPickMode(false); setLocationPickCandidate(undefined); locationPickCommit.current = undefined; };
+  const confirmLocationPick = () => {
+    if (!locationPickCandidate) return;
+    locationPickCommit.current?.(locationPickCandidate);
+    setLocationPickMode(false);
+    setLocationPickCandidate(undefined);
+    locationPickCommit.current = undefined;
   };
   const addSpot = (spot: Spot, request: AddSpotRequest) => {
     const result = addSpotToItinerary(itinerary, spot, request);
@@ -264,7 +287,7 @@ export default function Home() {
 
           <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onOpenAdd={setAddDialogSpot} onClose={() => setSelectedSpot(undefined)} />
 
-          <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} selectedSpot={selectedSpot} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={updateItinerary} onClear={clearItinerary} /></div>
+          <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} selectedSpot={selectedSpot} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} locationPickMode={locationPickMode} onStartLocationPick={beginLocationPick} onCancelLocationPick={cancelLocationPick} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={updateItinerary} onClear={clearItinerary} /></div>
 
           <section className={`card stress-card ${stress.label}`}>
             <div className="section-heading"><div><span className="eyebrow">旅程の負荷</span><h2>{stress.label}</h2></div><span className="stress-score">{loadScore} / 100</span></div>
@@ -296,10 +319,10 @@ export default function Home() {
         </aside>
 
         <section className="map-column">
-          <MapCanvas spots={visibleSpots} selectedSpot={selectedSpot} routeDay={routeDay} onSelectSpot={(spot) => { setSelectedSpot(spot); setMobileSheetOpen(true); }} itinerary={itinerary} onRouteModesChange={setRouteModes} />
+          <MapCanvas spots={visibleSpots} selectedSpot={selectedSpot} routeDay={routeDay} onSelectSpot={(spot) => { setSelectedSpot(spot); setMobileSheetOpen(true); }} itinerary={itinerary} onRouteModesChange={setRouteModes} locationPickMode={locationPickMode} locationPickCandidate={locationPickCandidate} onLocationPickCandidate={setLocationPickCandidate} onConfirmLocationPick={confirmLocationPick} onCancelLocationPick={cancelLocationPick} />
         </section>
       </div>
-      <nav className={`mobile-bottom-nav ${mobileSheetOpen ? "is-open" : ""}`} aria-label="モバイル用ナビゲーション">
+      <nav className={`mobile-bottom-nav ${mobileSheetOpen ? "is-open" : ""} ${locationPickMode ? "is-location-picking" : ""}`} aria-label="モバイル用ナビゲーション">
         <button onClick={() => setMobileSheetOpen(false)}><MapPinned size={16} /> 地図</button>
         <button onClick={() => openMobilePanel("spots-panel")}><Search size={16} /> 行き先</button>
         <button onClick={() => openMobilePanel("itinerary-panel")}><CalendarDays size={16} /> 旅程</button>

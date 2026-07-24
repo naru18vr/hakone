@@ -46,3 +46,35 @@ test("共有URLを作成し、共有旅程の確認画面を表示する", async
   await sharedPage.getByRole("button", { name: "一時的に見る" }).click();
   await expect(sharedPage.getByText("共有旅程を一時的に表示しています")).toBeVisible();
 });
+
+test("地図上の仮地点を確定し、追加フォームへ戻る", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.clear());
+  await page.goto("/");
+  const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
+  if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
+  await page.getByRole("button", { name: "予定を追加" }).click();
+  const dialog = page.getByRole("dialog", { name: "旅行の予定を追加" });
+  await dialog.getByLabel("タイトル（必須）").fill("地図で決めた休憩");
+  await dialog.getByLabel("設定方法").selectOption("map");
+  await dialog.getByRole("button", { name: "地図上で地点を選択" }).click();
+  await expect(page.getByText("地点選択モード")).toBeVisible();
+  await page.locator(".leaflet-container").click({ position: { x: 180, y: 220 } });
+  await expect(page.getByText("選択地点")).toBeVisible();
+  await page.getByRole("button", { name: "この地点を使用" }).click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("設定済み：")).toBeVisible();
+  await dialog.getByRole("button", { name: "予定を追加" }).click();
+  await expect(page.getByText("地図で決めた休憩")).toBeVisible();
+});
+
+test("地点選択のキャンセル後も入力内容を保持する", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.clear());
+  await page.goto("/");
+  await page.getByRole("button", { name: "予定を追加" }).click();
+  const dialog = page.getByRole("dialog", { name: "旅行の予定を追加" });
+  await dialog.getByLabel("タイトル（必須）").fill("入力を保持する休憩");
+  await dialog.getByLabel("設定方法").selectOption("map");
+  await dialog.getByRole("button", { name: "地図上で地点を選択" }).click();
+  await page.getByRole("button", { name: "選択を中止" }).click();
+  await expect(dialog.getByLabel("タイトル（必須）")).toHaveValue("入力を保持する休憩");
+});

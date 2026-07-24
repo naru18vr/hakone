@@ -12,5 +12,5 @@ export default defineConfig({
     { name: "mobile-430", use: { ...devices["Desktop Chrome"], viewport: { width: 430, height: 932 } } },
     { name: "tablet-portrait", use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 } } },
   ],
-  webServer: { command: "npm run dev", url: "http://127.0.0.1:3000", reuseExistingServer: true },
+  webServer: { command: "npm run dev -- --hostname 127.0.0.1", url: "http://127.0.0.1:3000", reuseExistingServer: true },
 });

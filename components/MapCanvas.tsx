@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { createRouteCache, getRoutePresentation } from "@/lib/routing";
-import { ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
+import { CustomLocation, ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
 type RouteModes = Record<1 | 2, RouteMode>;
 type Props = {
@@ -14,6 +14,11 @@ type Props = {
   onSelectSpot: (spot: Spot) => void;
   itinerary: ItineraryItem[];
   onRouteModesChange?: (modes: RouteModes) => void;
+  locationPickMode?: boolean;
+  locationPickCandidate?: CustomLocation;
+  onLocationPickCandidate?: (location?: CustomLocation) => void;
+  onConfirmLocationPick?: () => void;
+  onCancelLocationPick?: () => void;
 };
 
 const crowdColor: Record<Spot["crowdLevel"], string> = { 1: "#1f9d6a", 2: "#e0a100", 3: "#e45b2b", 4: "#b52d36" };
@@ -21,7 +26,7 @@ const routeColors = { 1: "#166cbe", 2: "#8b5cf6" } as const;
 const crowdLegend: Array<[Spot["crowdLevel"], string]> = [[1, "比較的空いている"], [2, "やや混雑"], [3, "混雑"], [4, "非常に混雑"]];
 const routeCache = createRouteCache();
 
-const markerIcon = (color: string, number?: number) => L.divIcon({
+const markerIcon = (color: string, number?: number | string) => L.divIcon({
   className: "",
   html: `<span class="map-pin" style="--pin:${color}"><i>${number ?? ""}</i></span>`,
   iconSize: [30, 30],
@@ -36,7 +41,12 @@ function FitToMarkers({ points }: { points: [number, number][] }) {
   return null;
 }
 
-export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary, onRouteModesChange }: Props) {
+function LocationPickHandler({ enabled, onPick }: { enabled: boolean; onPick?: (location: CustomLocation) => void }) {
+  useMapEvents({ click: (event) => { if (enabled) onPick?.({ latitude: Math.round(event.latlng.lat * 1_000_000) / 1_000_000, longitude: Math.round(event.latlng.lng * 1_000_000) / 1_000_000, source: "map" }); } });
+  return null;
+}
+
+export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary, onRouteModesChange, locationPickMode = false, locationPickCandidate, onLocationPickCandidate, onConfirmLocationPick, onCancelLocationPick }: Props) {
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
   const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
   const requestId = useRef(0);
@@ -144,7 +154,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         />
         <FitToMarkers points={fitPoints} />
         {spots.map((spot) => (
-          <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel])} eventHandlers={{ click: () => onSelectSpot(spot) }}>
+          <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel])} eventHandlers={{ click: () => { if (!locationPickMode) onSelectSpot(spot); } }}>
             <Tooltip direction="top" offset={[0, -27]} opacity={1}>{spot.name}</Tooltip>
           </Marker>
         ))}
@@ -156,6 +166,8 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
             <Tooltip direction="bottom" offset={[0, 24]} opacity={1}>{day}日目 {index + 1}. {item.title}</Tooltip>
           </Marker>
         )))}
+        <LocationPickHandler enabled={locationPickMode} onPick={onLocationPickCandidate} />
+        {locationPickCandidate && <Marker position={[locationPickCandidate.latitude, locationPickCandidate.longitude]} icon={markerIcon("#166cbe", "?")}><Tooltip permanent direction="top" offset={[0, -28]}>選択地点</Tooltip></Marker>}
       </MapContainer>
       <div className="map-controls">
         <div className="legend-title">混雑度（予測・一般傾向）</div>
@@ -169,6 +181,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         {routeStatus === "fallback" && <button onClick={() => setRetryKey((value) => value + 1)}>道路経路を再取得</button>}
       </div>
       {selectedSpot && <div className="map-selected">選択中：{selectedSpot.name}</div>}
+      {locationPickMode && <div className="location-pick-overlay" role="status" aria-live="assertive"><strong>地点選択モード</strong><span>地図をクリックして予定の場所を選んでください。</span>{locationPickCandidate ? <><small>緯度 {locationPickCandidate.latitude.toFixed(6)} ／ 経度 {locationPickCandidate.longitude.toFixed(6)}</small><div><button className="primary-button" onClick={onConfirmLocationPick}>この地点を使用</button><button className="secondary-button" onClick={() => onLocationPickCandidate?.()}>選び直す</button></div><button className="text-button danger" onClick={onCancelLocationPick}>キャンセル</button></> : <button className="secondary-button" onClick={onCancelLocationPick}>選択を中止</button>}</div>}
     </section>
   );
 }
