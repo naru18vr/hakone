@@ -4,6 +4,8 @@ import { spots } from "@/data/spots";
 import { addSpotToItinerary, moveItineraryItemToDay } from "@/lib/itinerary";
 import { createRouteCache, getRoutePresentation } from "@/lib/routing";
 import { recommendSpotPlacement } from "@/lib/recommendation";
+import { calculateReturnTrip, defaultReturnSettings, returnVerdict } from "@/lib/return-trip";
+import { crowdDetails } from "@/lib/crowd";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { assessStress, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
 import { ItineraryItem, TripState } from "@/types";
@@ -114,6 +116,10 @@ describe("経路の表示と全体集計", () => {
     expect(getRoutePresentation("fallback")).toMatchObject({ status: "estimate", label: "簡易推計" });
   });
 
+  it("2秒を超える経路計算状態は待機中であることを明示する", () => {
+    expect(getRoutePresentation("slow")).toMatchObject({ status: "recalculating", label: "計算に時間がかかっています" });
+  });
+
   it("同じ順序の道路経路はセッションキャッシュから再利用する", () => {
     const cache = createRouteCache();
     const items = clonePlan().filter((item) => item.day === 1);
@@ -129,5 +135,29 @@ describe("経路の表示と全体集計", () => {
     expect(summary.distanceKm).toBeCloseTo(summary.day1.distanceKm + summary.day2.distanceKm);
     expect(summary.predictedDriveMinutes).toBe(summary.day1.predictedDriveMinutes + summary.day2.predictedDriveMinutes);
     expect(summary.stayMinutes).toBe(summary.day1.stayMinutes + summary.day2.stayMinutes);
+  });
+});
+
+describe("帰京と混雑の比較情報", () => {
+  it("東京夕食への通常・混雑・悪化ケースを時刻順に算出する", () => {
+    const result = calculateReturnTrip(clonePlan().filter((item) => item.day === 2), spots, defaultReturnSettings);
+    expect(result.cases).toHaveLength(3);
+    expect(result.cases[0].dinnerMargin).toBeGreaterThan(result.cases[1].dinnerMargin);
+    expect(result.cases[1].dinnerMargin).toBeGreaterThan(result.cases[2].dinnerMargin);
+  });
+
+  it("夕食余裕の判定区分を返す", () => {
+    expect(returnVerdict(60)).toBe("余裕あり");
+    expect(returnVerdict(30)).toBe("おおむね問題なし");
+    expect(returnVerdict(15)).toBe("余裕少なめ");
+    expect(returnVerdict(0)).toBe("かなり危険");
+    expect(returnVerdict(-1)).toBe("間に合わない可能性");
+  });
+
+  it("混雑を施設・駐車場・道路と時間帯に分離する", () => {
+    const crowd = crowdDetails(byId("owakudani"));
+    expect(crowd.facility.source).not.toBe("realtime");
+    expect(crowd.road.level).toBeGreaterThanOrEqual(crowd.facility.level);
+    expect(crowd.hourly).toHaveLength(9);
   });
 });

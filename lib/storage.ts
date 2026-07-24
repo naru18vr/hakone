@@ -1,5 +1,5 @@
 import { isKnownItemType, isTimeValue, normalizeItinerary } from "@/lib/itinerary";
-import { ItineraryItem, SavedTripState, Spot, TripState } from "@/types";
+import { ItineraryItem, ReturnSettings, SavedTripState, Spot, TripState } from "@/types";
 
 export type RestoreResult =
   | { status: "missing" }
@@ -10,6 +10,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(v
 const isDateString = (value: unknown): value is string => typeof value === "string" && Number.isFinite(Date.parse(value));
 const isDay = (value: unknown): value is 1 | 2 => value === 1 || value === 2;
 const isRouteDay = (value: unknown): value is 1 | 2 | "all" => isDay(value) || value === "all";
+const isReturnSettings = (value: unknown): value is ReturnSettings => isRecord(value) && isTimeValue(value.dinnerTime) && ["東京駅", "品川駅", "新宿駅", "渋谷駅"].includes(String(value.arrivalStation)) && ["rentalReturnMinutes", "transferMinutes", "delayBufferMinutes"].every((key) => typeof value[key] === "number" && Number.isFinite(value[key]) && value[key] >= 0);
 
 function restoreItem(value: unknown, spotIds: Set<string>): ItineraryItem | null {
   if (!isRecord(value) || typeof value.id !== "string" || !isDay(value.day) || !isKnownItemType(value.type) || typeof value.title !== "string") return null;
@@ -76,6 +77,7 @@ export function restoreTripState(raw: string | null, spots: Spot[], allowedFilte
         crowdMode: data.crowdMode,
         visitTime: data.visitTime,
         weather: data.weather,
+        returnSettings: isReturnSettings(data.returnSettings) ? data.returnSettings : undefined,
       },
     },
   };

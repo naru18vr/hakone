@@ -40,6 +40,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
   const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
   const requestId = useRef(0);
+  const [retryKey, setRetryKey] = useState(0);
   const dayItems = useMemo(() => ({
     1: itinerary.filter((item) => item.day === 1 && item.latitude !== undefined && item.longitude !== undefined).sort((a, b) => a.order - b.order),
     2: itinerary.filter((item) => item.day === 2 && item.latitude !== undefined && item.longitude !== undefined).sort((a, b) => a.order - b.order),
@@ -56,23 +57,28 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
           source: "fallback",
         };
         if (items.length < 2) return [day, fallback] as const;
-        const cached = routeCache.get(items);
-        if (cached) return [day, cached] as const;
-        try {
+        const legs = await Promise.all(items.slice(1).map(async (item, index) => {
+          const pair = [items[index], item];
+          const cached = routeCache.get(pair);
+          if (cached) return cached;
+          try {
           const baseUrl = (process.env.NEXT_PUBLIC_ROUTING_API_URL || "https://router.project-osrm.org").replace(/\/$/, "");
-          const coordinates = items.map((item) => `${item.longitude},${item.latitude}`).join(";");
+          const coordinates = pair.map((point) => `${point.longitude},${point.latitude}`).join(";");
           const response = await fetch(`${baseUrl}/route/v1/driving/${coordinates}?overview=full&geometries=geojson`, { signal: controller.signal });
           if (!response.ok) throw new Error("route unavailable");
           const data = await response.json();
           const route = data?.routes?.[0];
           if (!route?.geometry?.coordinates) throw new Error("route unavailable");
           const roadRoute: RouteResult = { geometry: route.geometry.coordinates.map(([longitude, latitude]: [number, number]) => [latitude, longitude]), source: "routing" };
-          routeCache.set(items, roadRoute);
-          return [day, roadRoute] as const;
+          routeCache.set(pair, roadRoute);
+          return roadRoute;
         } catch (error) {
           if (controller.signal.aborted) throw error;
-          return [day, fallback] as const;
+          return { geometry: pair.map((point) => [point.latitude!, point.longitude!] as [number, number]), source: "fallback" } as RouteResult;
         }
+        }));
+        const road = legs.every((leg) => leg.source === "routing");
+        return [day, { geometry: legs.flatMap((leg, index) => index === 0 ? leg.geometry : leg.geometry.slice(1)), source: road ? "routing" : "fallback" }] as const;
       }));
       if (controller.signal.aborted || currentRequestId !== requestId.current) return;
       const next = Object.fromEntries(entries) as Partial<Record<1 | 2, RouteResult>>;
@@ -88,6 +94,20 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
       setRouteModes(loadingModes);
       onRouteModesChange?.(loadingModes);
     }, 0);
+    const slowTimer = window.setTimeout(() => {
+      if (controller.signal.aborted || currentRequestId !== requestId.current) return;
+      const slowModes: RouteModes = { 1: "slow", 2: "slow" };
+      setRouteModes(slowModes);
+      onRouteModesChange?.(slowModes);
+    }, 2000);
+    const timeoutTimer = window.setTimeout(() => {
+      if (controller.signal.aborted || currentRequestId !== requestId.current) return;
+      const fallbackRoutes = Object.fromEntries(([1, 2] as const).map((day) => [day, { geometry: dayItems[day].map((item) => [item.latitude!, item.longitude!] as [number, number]), source: "fallback" }])) as Partial<Record<1 | 2, RouteResult>>;
+      const fallbackModes: RouteModes = { 1: "fallback", 2: "fallback" };
+      setRoutes(fallbackRoutes);
+      setRouteModes(fallbackModes);
+      onRouteModesChange?.(fallbackModes);
+    }, 8000);
     const timer = window.setTimeout(() => {
       void load().catch(() => {
         if (controller.signal.aborted || currentRequestId !== requestId.current) return;
@@ -96,8 +116,8 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         onRouteModesChange?.(fallbackModes);
       });
     }, 250);
-    return () => { window.clearTimeout(loadingTimer); window.clearTimeout(timer); controller.abort(); };
-  }, [dayItems, onRouteModesChange]);
+    return () => { window.clearTimeout(loadingTimer); window.clearTimeout(slowTimer); window.clearTimeout(timeoutTimer); window.clearTimeout(timer); controller.abort(); };
+  }, [dayItems, onRouteModesChange, retryKey]);
 
   const fitPoints = useMemo(() => [
     ...spots.map((spot) => [spot.latitude, spot.longitude] as [number, number]),
@@ -105,7 +125,7 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
   ], [spots, itinerary, routeDay]);
   const visibleDays = routeDay === "all" ? [1, 2] as const : [routeDay] as const;
   const visibleModes = visibleDays.map((day) => routeModes[day]);
-  const routeStatus: RouteMode = visibleModes.some((mode) => mode === "loading") ? "loading" : visibleModes.every((mode) => mode === "routing") ? "routing" : "fallback";
+  const routeStatus: RouteMode = visibleModes.some((mode) => mode === "loading") ? "loading" : visibleModes.some((mode) => mode === "slow") ? "slow" : visibleModes.every((mode) => mode === "routing") ? "routing" : "fallback";
   const routeModeText = routeStatus === "loading"
     ? "道路経路を取得中…"
     : routeStatus === "routing"
@@ -145,7 +165,8 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
         <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
       </div>
       <div className={`route-mode ${routeStatus}`} aria-live="polite">
-        {routeStatus === "loading" ? routePresentation.label : routeModeText}
+        {routeStatus === "loading" || routeStatus === "slow" ? routePresentation.label : routeModeText}
+        {routeStatus === "fallback" && <button onClick={() => setRetryKey((value) => value + 1)}>道路経路を再取得</button>}
       </div>
       {selectedSpot && <div className="map-selected">選択中：{selectedSpot.name}</div>}
     </section>

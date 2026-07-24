@@ -10,16 +10,16 @@ import AddSpotDialog from "@/components/AddSpotDialog";
 import SpotDetail from "@/components/SpotDetail";
 import { AddSpotRequest, addSpotToItinerary } from "@/lib/itinerary";
 import { getRoutePresentation } from "@/lib/routing";
+import { calculateReturnTrip, defaultReturnSettings } from "@/lib/return-trip";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { airDistanceKm, assessStress, calcTripSummary, formatEndTime, getStressDescription, minutesToText } from "@/lib/trip";
-import { CrowdSource, ItineraryItem, RouteMode, SamplePlan, Spot, TripState } from "@/types";
+import { ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TripState } from "@/types";
 
 const MapCanvas = dynamic(() => import("@/components/MapCanvas"), { ssr: false, loading: () => <div className="map-loading">地図を準備しています…</div> });
 
 type FilterKey = "美術館" | "自然" | "絶景" | "湖" | "神社" | "子ども向け" | "雨天対応" | "駐車場あり" | "滞在1時間以内" | "混雑が少ない" | "宿泊施設から近い" | "無料" | "飲食店あり" | "トイレあり";
 const primaryFilters: FilterKey[] = ["混雑が少ない", "子ども向け", "雨天対応", "宿泊施設から近い", "滞在1時間以内"];
 const advancedFilters: FilterKey[] = ["美術館", "自然", "絶景", "湖", "神社", "駐車場あり", "無料", "飲食店あり", "トイレあり"];
-const crowdSourceLabel: Record<CrowdSource, string> = { realtime: "リアルタイム", forecast: "予測", general: "一般傾向", manual: "手動" };
 const STORAGE_KEY = "hakone-yurutabi-planner:v1";
 
 type RouteModes = Record<1 | 2, RouteMode>;
@@ -41,6 +41,8 @@ export default function Home() {
   const [storageReady, setStorageReady] = useState(false);
   const [addDialogSpot, setAddDialogSpot] = useState<Spot | undefined>();
   const [distanceReference, setDistanceReference] = useState<"hotel" | "odawara" | "last" | "selected">("hotel");
+  const [spotSort, setSpotSort] = useState<"near" | "drive" | "add" | "crowd" | "child" | "rain" | "stay" | "price">("near");
+  const [returnSettings, setReturnSettings] = useState<ReturnSettings>(defaultReturnSettings);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -56,6 +58,7 @@ export default function Home() {
           setCrowdMode(data.crowdMode);
           setVisitTime(data.visitTime);
           setWeather(data.weather);
+          setReturnSettings(data.returnSettings ?? defaultReturnSettings);
           setSelectedSpot(baseSpots.find((spot) => spot.id === data.selectedSpotId));
           setToast("保存した旅程を復元しました");
         } else if (restored.status === "invalid" || restored.status === "unsupported") {
@@ -73,12 +76,12 @@ export default function Home() {
   useEffect(() => {
     if (!storageReady) return;
     try {
-      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather };
+      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeTripState(data)));
     } catch {
       // プライベートブラウズ等で保存できない場合も、画面上の計画は利用できる。
     }
-  }, [storageReady, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather]);
+  }, [storageReady, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings]);
 
   useEffect(() => {
     if (!toast) return;
@@ -115,7 +118,16 @@ export default function Home() {
       return spot.tags.includes(filter);
     });
     return textMatch && filterMatch;
-  }), [spots, query, activeFilters]);
+  }).sort((a, b) => {
+    const distance = (spot: Spot) => airDistanceKm(spot, referencePoint) * (airDistanceKm(spot, referencePoint) < 3 ? 1.45 : 1.65);
+    if (spotSort === "near" || spotSort === "drive") return distance(a) - distance(b);
+    if (spotSort === "crowd") return a.crowdLevel - b.crowdLevel;
+    if (spotSort === "child") return b.childFriendly - a.childFriendly;
+    if (spotSort === "rain") return Number(b.rainyDayFriendly) - Number(a.rainyDayFriendly);
+    if (spotSort === "stay") return a.stayMinutes - b.stayMinutes;
+    if (spotSort === "price") return Number(a.priceAdult !== "無料") - Number(b.priceAdult !== "無料");
+    return a.stayMinutes - b.stayMinutes;
+  }), [spots, query, activeFilters, spotSort, referencePoint]);
 
   const day1 = itinerary.filter((item) => item.day === 1).sort((a, b) => a.order - b.order);
   const day2 = itinerary.filter((item) => item.day === 2).sort((a, b) => a.order - b.order);
@@ -128,6 +140,7 @@ export default function Home() {
   const totalDrive = tripSummary.predictedDriveMinutes;
   const totalStay = tripSummary.stayMinutes;
   const isRecalculating = routeModes[1] === "loading" || routeModes[2] === "loading";
+  const returnTrip = calculateReturnTrip(day2, spots, returnSettings);
 
   const toggleFilter = (filter: FilterKey) => setActiveFilters((current) => current.includes(filter) ? current.filter((item) => item !== filter) : [...current, filter]);
   const updateItinerary = (next: ItineraryItem[]) => {
@@ -147,6 +160,7 @@ export default function Home() {
     setAddDialogSpot(undefined);
   };
   const loadPlan = (plan: SamplePlan) => {
+    if (!window.confirm(`${plan.name}を適用すると、現在の旅程を上書きします。続けますか？`)) return;
     updateItinerary(plan.itinerary.map((item) => ({ ...item })));
     setActiveDay(1);
     setRouteDay("all");
@@ -165,9 +179,15 @@ export default function Home() {
     updateItinerary([]);
     setToast("旅程をすべて削除しました");
   };
+  const addReliefBreak = () => {
+    const items = itinerary.filter((item) => item.day === 2);
+    const last = items.at(-1);
+    updateItinerary([...itinerary, { id: `relief-break-${Date.now()}`, day: 2, type: "break", title: "午後の休憩", stayMinutes: 20, order: items.length + 1, latitude: last?.latitude, longitude: last?.longitude }]);
+    setToast("8月13日に20分の休憩を追加しました");
+  };
   const saveTrip = () => {
     try {
-      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather };
+      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeTripState(data)));
       setToast("この端末に旅程を保存しました");
     } catch {
@@ -196,6 +216,7 @@ export default function Home() {
             <div className="scenario-grid"><label>訪問時刻<select value={visitTime} onChange={(event) => setVisitTime(event.target.value)}><option>09:00</option><option>11:30</option><option>14:30</option><option>16:00</option></select></label><label>天候<select value={weather} onChange={(event) => setWeather(event.target.value as "晴れ" | "雨" | "くもり")}><option>晴れ</option><option>くもり</option><option>雨</option></select></label></div>
             <div className="mode-switch"><span>混雑データ</span><button className={crowdMode === "forecast" ? "active" : ""} onClick={() => setCrowdMode("forecast")}>予測</button><button className={crowdMode === "general" ? "active" : ""} onClick={() => setCrowdMode("general")}>一般傾向</button></div>
             <p className="source-note"><CircleAlert size={14} /> {crowdMode === "forecast" ? "お盆・時間帯・天候を用いた予測です。リアルタイム情報ではありません。" : "一般的な混雑傾向です。リアルタイム情報ではありません。"}</p>
+            <details className="return-settings"><summary>東京での夕食・帰京条件</summary><div className="scenario-grid"><label>夕食予定<input type="time" value={returnSettings.dinnerTime} onChange={(event) => setReturnSettings((value) => ({ ...value, dinnerTime: event.target.value }))} /></label><label>到着希望駅<select value={returnSettings.arrivalStation} onChange={(event) => setReturnSettings((value) => ({ ...value, arrivalStation: event.target.value as ReturnSettings["arrivalStation"] }))}><option>東京駅</option><option>品川駅</option><option>新宿駅</option><option>渋谷駅</option></select></label><label>返却所要時間<select value={returnSettings.rentalReturnMinutes} onChange={(event) => setReturnSettings((value) => ({ ...value, rentalReturnMinutes: Number(event.target.value) }))}><option value={20}>20分</option><option value={30}>30分</option><option value={40}>40分</option></select></label><label>乗換・遅延余裕<select value={returnSettings.transferMinutes + returnSettings.delayBufferMinutes} onChange={(event) => setReturnSettings((value) => ({ ...value, transferMinutes: Number(event.target.value) - value.delayBufferMinutes }))}><option value={25}>25分</option><option value={35}>35分</option><option value={45}>45分</option></select></label></div><small>小田原駅から{returnSettings.arrivalStation}は概算 {returnTrip.trainEstimate}（一般的な移動時間・時刻表未接続）</small></details>
           </section>
 
           <section className="card spots-card" id="spots-panel">
@@ -205,7 +226,8 @@ export default function Home() {
             <div className="filter-chips">{primaryFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter === "雨天対応" ? "雨でもOK" : filter === "宿泊施設から近い" ? "宿から近い" : filter}</button>)}</div>
             <details className="advanced-filters"><summary>詳細条件</summary><div className="filter-chips">{advancedFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter}</button>)}</div></details>
             <div className="distance-reference" aria-label="観光地一覧の距離基準"><span>距離の基準</span>{(["hotel", "odawara", "last", "selected"] as const).map((key) => <button key={key} className={distanceReference === key ? "active" : ""} onClick={() => setDistanceReference(key)}>{({ hotel: "宿泊施設", odawara: "小田原駅", last: "旅程の最後", selected: "選択中" })[key]}</button>)}</div>
-            <div className="spot-list">{visibleSpots.map((spot) => { const distance = airDistanceKm(spot, referencePoint) * (airDistanceKm(spot, referencePoint) < 3 ? 1.45 : 1.65); const minutes = Math.max(6, Math.round(distance * 2.2 + 4)); return <button key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`} onClick={() => { setSelectedSpot(spot); setMobileSheetOpen(true); }}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small>{spot.category} · 滞在 {spot.stayMinutes}分 · {crowdSourceLabel[spot.crowdSource]}</small><small className="spot-distance">{({ hotel: "宿から", odawara: "小田原駅から", last: "旅程の最後から", selected: "選択中の地点から" })[distanceReference]} 車{minutes}分・{distance.toFixed(1)}km</small></span><ChevronDown size={15} /></button>; })}</div>
+            <label className="sort-select">並べ替え<select value={spotSort} onChange={(event) => setSpotSort(event.target.value as typeof spotSort)}><option value="near">基準地点から近い</option><option value="drive">車時間が短い</option><option value="add">追加時間が短い</option><option value="crowd">混雑が少ない</option><option value="child">子ども向け</option><option value="rain">雨天対応</option><option value="stay">滞在時間が短い</option><option value="price">料金が安い</option></select></label>
+            <div className="spot-list">{visibleSpots.map((spot) => { const straight = airDistanceKm(spot, referencePoint); const distance = straight * (straight < 3 ? 1.45 : 1.65); const minutes = Math.max(6, Math.round(distance * 2.2 + 4)); const addedDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))]; return <button key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`} onClick={() => { setSelectedSpot(spot); setMobileSheetOpen(true); }}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small>{spot.category} · 滞在 {spot.stayMinutes}分</small><small className="spot-distance">{({ hotel: "宿から", odawara: "小田原駅から", last: "旅程の最後から", selected: "選択中の地点から" })[distanceReference]} 車{minutes}分・{distance.toFixed(1)}km</small><small>混雑：{["", "低", "やや低", "中", "高"][spot.crowdLevel]} · 雨天：{spot.rainyDayFriendly ? "◎" : "△"}{addedDays.length ? ` · 8月${addedDays.map((day) => day === 1 ? "12" : "13").join("・")}日に追加済み` : ""}</small></span><ChevronDown size={15} /></button>; })}</div>
           </section>
 
           <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onOpenAdd={setAddDialogSpot} onClose={() => setSelectedSpot(undefined)} />
@@ -219,7 +241,7 @@ export default function Home() {
             <p>{getStressDescription(stress.label)}</p>
             <div className="daily-stress" aria-label="日ごとの負荷"><span>8月12日 <strong>{stress.days[1].score} / 100</strong> {stress.days[1].label}</span><span>8月13日 <strong>{stress.days[2].score} / 100</strong> {stress.days[2].label}</span></div>
             <div className="stress-breakdown" aria-label="旅行全体の負荷内訳">{stress.days[activeDay].breakdown.map((item) => <div key={item.label}><span>{item.label}<small>{item.note}</small></span><strong>{item.score}<em>/{item.max}</em></strong></div>)}</div>
-            <ul>{stress.suggestions.map((suggestion) => <li key={suggestion}><CheckCircle2 size={15} /> {suggestion}</li>)}</ul>
+            <ul>{stress.suggestions.map((suggestion) => <li key={suggestion}><CheckCircle2 size={15} /><span>{suggestion}{suggestion.includes("休憩") && <button className="text-button" onClick={addReliefBreak}>20分の休憩を追加</button>}{suggestion.includes("小田原") && <button className="text-button" onClick={() => { const last = [...day2].reverse().find((item) => item.type === "spot"); if (last) updateItinerary(itinerary.filter((item) => item.id !== last.id)); }}>最後の観光地を外す</button>}</span></li>)}</ul>
           </section>
 
           <section className="route-overview route-overview-panel">
@@ -230,7 +252,14 @@ export default function Home() {
             <p className="route-source-note">地図経路：1日目 {routeModeLabel(routeModes[1])} ／ 2日目 {routeModeLabel(routeModes[2])}</p>
           </section>
 
-          <details className="optional-tools"><summary><Sparkles size={15} /> サンプルプランを切り替える</summary><div className="auto-plan-grid">{autoPlanCards(samplePlans).map(({ title, description, plan }) => <button className="auto-plan-card" key={title} onClick={() => loadPlan(plan)}><strong>{title}</strong><span>{description}</span></button>)}</div></details>
+          <section className="card return-card">
+            <div className="section-heading"><div><span className="eyebrow">8月13日の帰京予測</span><h2>{returnSettings.dinnerTime}の夕食に間に合う？</h2></div><span className={`return-verdict ${returnTrip.cases[0].verdict}`}>{returnTrip.cases[0].verdict}</span></div>
+            <div className="return-cases">{returnTrip.cases.map((entry) => <div key={entry.label}><strong>{entry.label}</strong><span>小田原着 {entry.stationArrival} · 返却完了 {entry.returnComplete}</span><span>{returnSettings.arrivalStation}着 {entry.tokyoArrival}</span><b>夕食まで {entry.dinnerMargin >= 0 ? minutesToText(entry.dinnerMargin) : `${minutesToText(-entry.dinnerMargin)}超過`}</b><small>{entry.verdict}</small></div>)}</div>
+            <p className="muted-note">仙石原側の小田原駅到着推奨：通常 {returnTrip.recommendedStationArrival[0]}まで／混雑 {returnTrip.recommendedStationArrival[1]}まで／安全重視 {returnTrip.recommendedStationArrival[2]}まで</p>
+            {returnTrip.cases[1].dinnerMargin < 30 && <button className="secondary-button" onClick={() => { const last = [...day2].reverse().find((item) => item.type === "spot"); if (last) { updateItinerary(itinerary.filter((item) => item.id !== last.id)); setToast(`${last.title}を外し、帰京余裕を再計算しました`); } }}>最後の観光地を外す</button>}
+          </section>
+
+          <details className="optional-tools"><summary><Sparkles size={15} /> サンプルプランを比較して適用</summary><div className="auto-plan-grid">{autoPlanCards(samplePlans, spots, returnSettings).map(({ title, description, plan, metrics }) => <button className="auto-plan-card" key={title} onClick={() => loadPlan(plan)}><strong>{title}</strong><span>{description}</span><small>走行 {metrics.distance.toFixed(1)}km · 混雑考慮 {minutesToText(metrics.drive)}</small><small>日別負荷 {metrics.day1} / {metrics.day2} · 東京着 {metrics.tokyo}</small><em>このプランを適用</em></button>)}</div></details>
           <section className="data-disclaimer"><CloudRain size={17} /><div><strong>情報の扱い</strong><p>営業時間・料金・道路状況は変動します。リアルタイム渋滞・混雑は未接続で、推定情報として表示します。</p></div></section>
         </aside>
 
@@ -244,7 +273,7 @@ export default function Home() {
         <button onClick={() => openMobilePanel("itinerary-panel")}><CalendarDays size={16} /> 旅程</button>
       </nav>
       {toast && <div className="toast" role="status" aria-live="polite"><CheckCircle2 size={17} /> {toast}</div>}
-      {addDialogSpot && <AddSpotDialog spot={addDialogSpot} itinerary={itinerary} spots={spots} onConfirm={(request) => addSpot(addDialogSpot, request)} onClose={() => setAddDialogSpot(undefined)} />}
+      {addDialogSpot && <AddSpotDialog spot={addDialogSpot} itinerary={itinerary} spots={spots} returnSettings={returnSettings} onConfirm={(request) => addSpot(addDialogSpot, request)} onRemoveExisting={() => { const next = itinerary.filter((item) => !(item.type === "spot" && item.spotId === addDialogSpot.id)); updateItinerary(next); setToast(`${addDialogSpot.name}を旅程から削除しました`); }} onClose={() => setAddDialogSpot(undefined)} />}
     </main>
   );
 }
@@ -258,12 +287,19 @@ function SummaryBlock({ title, summary, isRecalculating }: { title: string; summ
   return <div className="summary-block"><strong>{title}</strong><span>走行 {summary.distanceKm.toFixed(1)} km</span><span>通常 {minutesToText(summary.baseDriveMinutes)}</span><span>混雑考慮 {minutesToText(summary.predictedDriveMinutes)}</span><span>滞在 {minutesToText(summary.stayMinutes)}</span>{summary.waitMinutes > 0 && <span>希望時刻待ち {minutesToText(summary.waitMinutes)}</span>}</div>;
 }
 
-function autoPlanCards(plans: SamplePlan[]) {
+function autoPlanCards(plans: SamplePlan[], spots: Spot[], returnSettings: ReturnSettings) {
   const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
   return [
     { title: "最も楽なプラン", description: "仙石原内で完結。移動と判断回数を最小化。", plan: byId.sengokuhara },
     { title: "美術館中心", description: "屋内中心で暑さ・雨に対応。", plan: byId["rain-museum"] },
     { title: "箱根らしさ重視", description: "早朝の大涌谷を含む、条件付きの案。", plan: byId.owakudani },
     { title: "混雑回避", description: "元箱根中心を避け、湖尻側へ。", plan: byId.lake },
-  ];
+  ].map((item) => {
+    const day1 = item.plan.itinerary.filter((entry) => entry.day === 1);
+    const day2 = item.plan.itinerary.filter((entry) => entry.day === 2);
+    const summary = calcTripSummary(day1, day2, spots);
+    const stress = assessStress(day1, day2, spots);
+    const returnTrip = calculateReturnTrip(day2, spots, returnSettings);
+    return { ...item, metrics: { distance: summary.distanceKm, drive: summary.predictedDriveMinutes, day1: stress.days[1].score, day2: stress.days[2].score, tokyo: returnTrip.cases[0].tokyoArrival } };
+  });
 }

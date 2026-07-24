@@ -2,6 +2,7 @@
 
 import { Car, Check, Clock3, CloudRain, ExternalLink, Footprints, MapPin, Plus, Users, X } from "lucide-react";
 import { CrowdSource, ItineraryItem, Spot } from "@/types";
+import { crowdDetails, crowdText } from "@/lib/crowd";
 
 const sourceLabel: Record<CrowdSource, string> = {
   realtime: "リアルタイム情報",
@@ -30,6 +31,8 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
   );
 
   const addedDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))];
+  const crowds = crowdDetails(spot);
+  const arrival = itinerary.find((item) => item.type === "spot" && item.spotId === spot.id)?.startTime;
 
   return (
     <section className="detail-card" aria-live="polite">
@@ -47,6 +50,7 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
         <small>{sourceLabel[spot.crowdSource]} · 更新 {spot.crowdUpdatedAt}</small>
       </div>
       <p className="muted-note">{spot.crowdHint}／おすすめ：{spot.bestTime}</p>
+      <details className="crowd-details"><summary>混雑の内訳・時間帯別予測（{sourceLabel[spot.crowdSource]}）</summary><div className="crowd-split"><span>施設内 <b>{crowdText(crowds.facility.level)}</b></span><span>駐車場 <b>{crowdText(crowds.parking.level)}</b></span><span>周辺道路 <b>{crowdText(crowds.road.level)}</b></span></div><small>根拠：{crowds.road.reasons.join("・")}／信頼度：{crowds.road.confidence === "medium" ? "中" : "低"}。リアルタイム情報ではありません。</small><div className="crowd-hours">{crowds.hourly.map((entry, index) => <span key={index} className={`level-${entry.level}`}><b>{index + 9}時</b>{crowdText(entry.level)}</span>)}</div>{arrival && <p>旅程の到着希望：{arrival}（現在の旅程では混雑を再確認してください）</p>}<p>おすすめ訪問時間：{spot.bestTime}</p></details>
       <div className="fact-grid">
         <Fact icon={<Clock3 size={15} />} label="営業時間" value={spot.openingHours ?? "要確認"} />
         <Fact icon={<Clock3 size={15} />} label="定休日" value={spot.closedDays ?? "要確認"} />

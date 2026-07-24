@@ -1,4 +1,11 @@
 export type CrowdSource = "realtime" | "forecast" | "general" | "manual";
+export type CrowdInfo = {
+  level: 1 | 2 | 3 | 4 | 5;
+  source: CrowdSource | "none";
+  confidence: "low" | "medium" | "high";
+  updatedAt?: string;
+  reasons: string[];
+};
 
 export type SpotCategory =
   | "美術館"
@@ -33,6 +40,9 @@ export type Spot = {
   crowdSource: CrowdSource;
   crowdUpdatedAt: string;
   crowdHint: string;
+  facilityCrowd?: CrowdInfo;
+  parkingCrowd?: CrowdInfo;
+  roadCrowd?: CrowdInfo;
   bestTime: string;
   tags: string[];
   dataNote: string;
@@ -62,7 +72,15 @@ export type RouteResult = {
 };
 
 /** 道路経路の取得状況。fallback は道路形状を取得できず、直線の参考線を表示している状態。 */
-export type RouteMode = RouteResult["source"] | "loading";
+export type RouteMode = RouteResult["source"] | "loading" | "slow";
+
+export type ReturnSettings = {
+  dinnerTime: string;
+  arrivalStation: "東京駅" | "品川駅" | "新宿駅" | "渋谷駅";
+  rentalReturnMinutes: number;
+  transferMinutes: number;
+  delayBufferMinutes: number;
+};
 
 export type TripState = {
   itinerary: ItineraryItem[];
@@ -74,6 +92,7 @@ export type TripState = {
   crowdMode: "forecast" | "general";
   visitTime: string;
   weather: "晴れ" | "雨" | "くもり";
+  returnSettings?: ReturnSettings;
 };
 
 /** LocalStorage に保存する、明示的にバージョン管理された旅程データ。 */

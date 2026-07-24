@@ -8,6 +8,7 @@ export type RoutePresentation = {
 
 export const getRoutePresentation = (mode: RouteMode): RoutePresentation => {
   if (mode === "loading") return { status: "recalculating", label: "経路を計算中…", detail: "時刻と距離は仮表示です。" };
+  if (mode === "slow") return { status: "recalculating", label: "計算に時間がかかっています", detail: "時刻と距離は仮表示です。簡易推計へ自動で切り替えます。" };
   if (mode === "routing") return { status: "road", label: "道路ルート", detail: "道路に沿った経路を表示しています。" };
   return { status: "estimate", label: "簡易推計", detail: "道路経路を取得できないため、直線距離を基に安全側で推計しています。" };
 };
