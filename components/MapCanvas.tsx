@@ -8,6 +8,7 @@ import { ItineraryItem, RouteResult, Spot } from "@/types";
 type Props = {
   spots: Spot[];
   selectedSpot?: Spot;
+  routeDay: 1 | 2 | "all";
   onSelectSpot: (spot: Spot) => void;
   itinerary: ItineraryItem[];
 };
@@ -31,7 +32,7 @@ function FitToMarkers({ points }: { points: [number, number][] }) {
   return null;
 }
 
-export default function MapCanvas({ spots, selectedSpot, onSelectSpot, itinerary }: Props) {
+export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary }: Props) {
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
   const [routeStatus, setRouteStatus] = useState<"routing" | "fallback" | "loading">("loading");
   const dayItems = useMemo(() => ({
@@ -74,8 +75,9 @@ export default function MapCanvas({ spots, selectedSpot, onSelectSpot, itinerary
 
   const fitPoints = useMemo(() => [
     ...spots.map((spot) => [spot.latitude, spot.longitude] as [number, number]),
-    ...itinerary.filter((item) => item.latitude !== undefined).map((item) => [item.latitude!, item.longitude!] as [number, number]),
-  ], [spots, itinerary]);
+    ...itinerary.filter((item) => item.latitude !== undefined && (routeDay === "all" || item.day === routeDay)).map((item) => [item.latitude!, item.longitude!] as [number, number]),
+  ], [spots, itinerary, routeDay]);
+  const visibleDays = routeDay === "all" ? [1, 2] as const : [routeDay] as const;
 
   return (
     <section className="map-shell" aria-label="箱根周辺の地図">
@@ -90,10 +92,10 @@ export default function MapCanvas({ spots, selectedSpot, onSelectSpot, itinerary
             <Tooltip direction="top" offset={[0, -27]} opacity={1}>{spot.name}</Tooltip>
           </Marker>
         ))}
-        {([1, 2] as const).map((day) => routes[day]?.geometry && (
+        {visibleDays.map((day) => routes[day]?.geometry && (
           <Polyline key={`route-${day}`} positions={routes[day]!.geometry} pathOptions={{ color: routeColors[day], weight: 5, opacity: 0.85, dashArray: routes[day]!.source === "fallback" ? "8 8" : undefined }} />
         ))}
-        {([1, 2] as const).flatMap((day) => dayItems[day].map((item, index) => (
+        {visibleDays.flatMap((day) => dayItems[day].map((item, index) => (
           <Marker key={`sequence-${item.id}`} position={[item.latitude!, item.longitude!]} icon={markerIcon(routeColors[day], index + 1)}>
             <Tooltip direction="bottom" offset={[0, 24]} opacity={1}>{day}日目 {index + 1}. {item.title}</Tooltip>
           </Marker>
@@ -107,7 +109,7 @@ export default function MapCanvas({ spots, selectedSpot, onSelectSpot, itinerary
         <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
       </div>
       <div className={`route-mode ${routeStatus}`}>
-        {routeStatus === "loading" ? "経路を取得中…" : routeStatus === "routing" ? "道路に沿った経路を表示" : "簡易ルートを表示（経路API未接続）"}
+        {routeStatus === "loading" ? "経路を取得中…" : routeStatus === "routing" ? `${routeDay === "all" ? "全日程" : `${routeDay}日目`}の道路ルートを表示` : "簡易ルートを表示（経路API未接続）"}
       </div>
       {selectedSpot && <div className="map-selected">選択中：{selectedSpot.name}</div>}
     </section>
