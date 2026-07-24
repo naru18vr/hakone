@@ -1,0 +1,66 @@
+"use client";
+
+import { Car, Clock3, CloudRain, ExternalLink, Footprints, MapPin, Plus, Users, X } from "lucide-react";
+import { CrowdSource, Spot } from "@/types";
+
+const sourceLabel: Record<CrowdSource, string> = {
+  realtime: "リアルタイム情報",
+  forecast: "予測情報",
+  general: "一般的な傾向",
+  manual: "手動設定",
+};
+
+const crowdLabel = ["", "比較的空いている", "やや混雑", "混雑", "非常に混雑"];
+
+type Props = { spot?: Spot; distanceFromHotel?: number; distanceFromOdawara?: number; onAdd: (spot: Spot) => void; onClose: () => void };
+
+export default function SpotDetail({ spot, distanceFromHotel, distanceFromOdawara, onAdd, onClose }: Props) {
+  if (!spot) return (
+    <section className="detail-empty">
+      <MapPin size={28} />
+      <p>地図上のマーカー、または観光地一覧を選ぶと、営業時間・歩く量・混雑の目安を確認できます。</p>
+    </section>
+  );
+
+  return (
+    <section className="detail-card" aria-live="polite">
+      <div className="detail-visual category-art">
+        <span>{spot.category === "美術館" ? "✦" : spot.category === "自然" ? "♧" : spot.category === "湖" ? "≈" : spot.category === "神社" ? "⛩" : "◉"}</span>
+        <small>施設写真は未登録</small>
+      </div>
+      <div className="detail-heading">
+        <div><span className="eyebrow">{spot.category}</span><h2>{spot.name}</h2></div>
+        <button className="icon-button" onClick={onClose} aria-label="詳細を閉じる"><X size={18} /></button>
+      </div>
+      <p className="detail-description">{spot.description}</p>
+      <div className="crowd-callout crowd-l{spot.crowdLevel}">
+        <span>混雑度：{crowdLabel[spot.crowdLevel]}</span>
+        <small>{sourceLabel[spot.crowdSource]} · 更新 {spot.crowdUpdatedAt}</small>
+      </div>
+      <p className="muted-note">{spot.crowdHint}／おすすめ：{spot.bestTime}</p>
+      <div className="fact-grid">
+        <Fact icon={<Clock3 size={15} />} label="営業時間" value={spot.openingHours ?? "要確認"} />
+        <Fact icon={<Clock3 size={15} />} label="定休日" value={spot.closedDays ?? "要確認"} />
+        <Fact icon={<Users size={15} />} label="料金（大人）" value={spot.priceAdult ?? "要確認"} />
+        <Fact icon={<Clock3 size={15} />} label="滞在目安" value={`${spot.stayMinutes}分`} />
+        <Fact icon={<Car size={15} />} label="駐車場" value={spot.parkingAvailable ? spot.parkingSpaces ?? "あり" : "なし"} />
+        <Fact icon={<CloudRain size={15} />} label="雨天対応" value={spot.rainyDayFriendly ? "比較的しやすい" : "屋外中心"} />
+        <Fact icon={<Footprints size={15} />} label="歩く量" value={`${"●".repeat(spot.walkingLevel)}${"○".repeat(5 - spot.walkingLevel)}`} />
+        <Fact icon={<Users size={15} />} label="子ども向け" value={`小学生 ${spot.childFriendly}/5・中学生 ${spot.juniorHighFriendly}/5`} />
+      </div>
+      <div className="distance-grid">
+        <span>宿泊予定地から <strong>{distanceFromHotel?.toFixed(1) ?? "-"} km</strong></span>
+        <span>小田原駅から <strong>{distanceFromOdawara?.toFixed(1) ?? "-"} km</strong></span>
+      </div>
+      <p className="data-note">情報区分：静的な参考データ／登録日 2026-07-24<br />{spot.dataNote}</p>
+      <div className="detail-actions">
+        <button className="primary-button" onClick={() => onAdd(spot)}><Plus size={17} /> 旅程に追加</button>
+        {spot.officialUrl && <a className="secondary-button" href={spot.officialUrl} target="_blank" rel="noreferrer">公式サイト <ExternalLink size={15} /></a>}
+      </div>
+    </section>
+  );
+}
+
+function Fact({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return <div className="fact"><span>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></div>;
+}
