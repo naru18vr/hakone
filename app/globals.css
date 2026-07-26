@@ -80,3 +80,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width:760px) {
   .map-controls { width:min(270px,calc(100% - 18px)); max-height:42%; overflow:auto; }
 }
+
+/* 観光地・食事処マーカーの情報吹き出し */
+.leaflet-popup-content-wrapper { border-radius:14px; box-shadow:0 12px 32px rgba(20,48,40,.22); }
+.leaflet-popup-content { margin:12px 14px; }
+.spot-map-popup { display:grid; gap:8px; color:var(--ink); }
+.spot-map-popup header { display:grid; gap:2px; padding-right:20px; }
+.spot-map-popup header span { color:var(--green); font-size:10px; font-weight:700; letter-spacing:.08em; }
+.spot-map-popup h3 { margin:0; font-size:15px; line-height:1.35; }
+.spot-map-popup > p { display:-webkit-box; margin:0; overflow:hidden; color:var(--muted); font-size:11px; line-height:1.5; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.spot-map-popup dl { display:grid; gap:0; margin:0; border-top:1px solid var(--line); }
+.spot-map-popup dl div { display:grid; grid-template-columns:64px 1fr; gap:6px; padding:5px 0; border-bottom:1px solid #edf1ed; font-size:10px; line-height:1.4; }
+.spot-map-popup dt { color:var(--muted); }
+.spot-map-popup dd { margin:0; color:#304c44; font-weight:700; overflow-wrap:anywhere; }
+.spot-map-popup-actions { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.spot-map-popup-actions button, .spot-map-popup-actions a { min-height:40px; display:flex; align-items:center; justify-content:center; padding:7px; border:1px solid var(--green); border-radius:8px; font-size:10px; font-weight:700; text-decoration:none; }
+.spot-map-popup-actions button { background:var(--green); color:#fff; }
+.spot-map-popup-actions a { background:#fff; color:var(--green); }
+@media (max-width:760px) {
+  .spot-map-popup-actions button, .spot-map-popup-actions a { min-height:44px; }
+}
