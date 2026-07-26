@@ -214,6 +214,41 @@ export const spots: Spot[] = [
     officialUrl: "https://ginkatsutei.jp/ginkatsutei-menu/", openingHours: "月・木〜日11:00〜14:30／17:00〜19:00、火11:00〜14:30（要確認）", closedDays: "水曜・火曜夜（要確認）", priceAdult: "ランチ目安 1,000〜2,000円", stayMinutes: 65,
     parkingAvailable: true, parkingSpaces: "店舗駐車場あり（台数・混雑時の案内は公式で要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
     crowdLevel: 4, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "有名店のため、休日・昼どきは待ち時間が出やすい", bestTime: "開店直後または14時前", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け"], dataNote: "営業時間・休業日・駐車場は2026-07-26に公式／観光案内を確認。夏休みは待ち時間を見込んでください。", photoKind: "placeholder", reviewScore: "食べログ参考 3.49/5（掲載情報は変動）"
+  },
+  {
+    id: "daruma-ryoriten", name: "だるま料理店", category: "飲食", latitude: 35.2504, longitude: 139.1603,
+    description: "小田原城近くの老舗料理店。小田原で車を借りる前後に、海の幸や天ぷらを落ち着いて食べたい日の候補です。",
+    officialUrl: "https://darumanet.com/", openingHours: "食堂 11:00〜21:00 L.O.20:00（要確認）", closedDays: "元日・2日、ほか公式で要確認", priceAdult: "ランチ目安 1,500〜3,000円", stayMinutes: 70,
+    parkingAvailable: true, parkingSpaces: "普通車30台（公式案内）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "昼どき・小田原城周辺イベント時は混みやすい", bestTime: "11時台または14時以降", tags: ["飲食店あり", "駐車場あり", "雨天対応"], dataNote: "営業時間・予約・駐車場は2026-07-26に公式案内を確認。来店前に再確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "elenna-gosso", name: "えれんなごっそ", category: "飲食", latitude: 35.2408, longitude: 139.1152,
+    description: "鈴廣かまぼこの里にあるバイキングレストラン。小田原・箱根の食材を家族で選びやすく、体験や買い物と同じ駐車場で完結します。",
+    officialUrl: "https://www.elennagosso.com/", openingHours: "平日11:00〜16:00／土日祝9:30〜17:00（要確認）", closedDays: "年中無休（臨時変更は公式で要確認）", priceAdult: "ランチ目安 2,000〜3,000円", stayMinutes: 80,
+    parkingAvailable: true, parkingSpaces: "鈴廣かまぼこの里 無料300台（施設全体）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 5, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "休日の昼どきは家族連れで混みやすい", bestTime: "開店直後または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け", "トイレあり"], dataNote: "営業時間・料金・駐車場は2026-07-26に公式／小田原観光案内を確認。体験を組み合わせる場合は予約条件を確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "cafe107", name: "えれんなごっそ CAFÉ107", category: "飲食", latitude: 35.2408, longitude: 139.1152,
+    description: "鈴廣かまぼこの里の登山電車カフェ。小田原到着直後や帰り道の短い休憩、軽食・スイーツに使いやすい候補です。",
+    officialUrl: "https://www.elennagosso.com/cafe107/", openingHours: "10:00〜17:00 L.O.16:30（要確認）", closedDays: "元日・臨時変更は公式で要確認", priceAdult: "軽食・カフェ目安 500〜1,500円", stayMinutes: 40,
+    parkingAvailable: true, parkingSpaces: "鈴廣かまぼこの里 無料300台（施設全体）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 5, juniorHighFriendly: 3,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "午後のカフェ時間・イベント開催日は席が埋まりやすい", bestTime: "午前または15時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け", "滞在1時間以内"], dataNote: "営業時間・イベント貸切日は2026-07-26に公式案内を確認。運転者の飲酒はできません。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "irori-chaya", name: "いろり茶屋", category: "飲食", latitude: 35.2637, longitude: 139.0089,
+    description: "仙石原の古民家風食事処。囲炉裏料理を中心に、仙石原で座ってゆっくり昼食・夕食を取りたいときの候補です。",
+    officialUrl: "https://irorichaya-sengokuhara.com/", openingHours: "11:30〜14:30 L.O.14:00／17:00〜20:00 L.O.19:30（要確認）", closedDays: "水曜（要確認）", priceAdult: "目安 2,000〜4,000円", stayMinutes: 70,
+    parkingAvailable: true, parkingSpaces: "駐車場あり・約10〜17台（公式で要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "昼食・夕食の開始時間帯は予約利用と重なりやすい", bestTime: "11時半の開店直後または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い", "子ども向け"], dataNote: "営業時間・駐車台数・予約可否は2026-07-26に公式案内を確認。来店前に再確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "ramen-kuraichi", name: "RAMEN KURAICHI（ラーメン蔵一）", category: "飲食", latitude: 35.2898, longitude: 138.9994,
+    description: "仙石原・金時山登山口近くの喜多方ラーメン店。子どもと短時間で食べたい日や、御殿場側へ向かう前後の昼食候補です。",
+    officialUrl: "https://www.ramen-kuraichi.com/", openingHours: "10:30〜15:00 L.O.14:30（要確認）", closedDays: "水曜・第4木曜（要確認）", priceAdult: "ラーメン 980円〜（公式メニュー）", stayMinutes: 50,
+    parkingAvailable: true, parkingSpaces: "15台（公式案内）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "昼どきは登山・ドライブ客で混みやすい", bestTime: "10時半の開店直後または14時以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け", "滞在1時間以内"], dataNote: "営業時間・休業日・駐車場は2026-07-26に公式案内を確認。スープ切れ等は当日店舗へ確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
   }
 ];
 
