@@ -261,7 +261,7 @@ export const spots: Spot[] = [
     id: "komagatake-ropeway", name: "箱根 駒ヶ岳ロープウェー（芦ノソラ）", category: "絶景", latitude: 35.2001, longitude: 139.0230,
     description: "箱根園から駒ヶ岳山頂へ上るロープウェー。富士山・芦ノ湖の眺望を短時間で楽しめ、箱根園の施設とまとめやすいスポットです。",
     officialUrl: "https://www.princehotels.co.jp/amuse/hakone-en/ropeway/", openingHours: "始発9:00、上り最終16:30・下り最終16:50（季節・天候で変更）", closedDays: "定休日なし（8/12・13運行予定、点検・強風時は運休）", priceAdult: "運賃は公式サイトで要確認", priceJuniorHigh: "運賃は公式サイトで要確認", priceElementary: "運賃は公式サイトで要確認", stayMinutes: 90,
-    parkingAvailable: true, parkingSpaces: "箱根園駐車場 約300台・有料", rainyDayFriendly: false, walkingLevel: 2, childFriendly: 5, juniorHighFriendly: 5,
+    parkingAvailable: true, parkingSpaces: "箱根園駐車場 乗用車294台・有料", rainyDayFriendly: false, walkingLevel: 2, childFriendly: 5, juniorHighFriendly: 5,
     crowdLevel: 4, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "お盆は箱根園入口・乗車列とも混みやすく、天候で待ち時間が変動", bestTime: "9時の始発付近", tags: ["絶景", "子ども向け", "駐車場あり", "トイレあり", "飲食店あり"], dataNote: "運行時間・駐車場は2026-07-27に公式案内を確認。天候による運休があるため当日朝に運行状況を確認してください。", photoKind: "placeholder"
   },
   {
@@ -281,7 +281,7 @@ export const spots: Spot[] = [
   {
     id: "hakone-ekiden-museum", name: "箱根駅伝ミュージアム", category: "美術館", latitude: 35.1894, longitude: 139.0248,
     description: "箱根駅伝の歴史や名場面を展示する小規模ミュージアム。箱根町港・関所と近く、中学生にも分かりやすい雨天候補です。",
-    officialUrl: "https://www.hakoneekidenmuseum.jp/", openingHours: "平日10:00〜16:30、土休日9:30〜17:00", closedDays: "定休日なし（8/12・13営業予定、臨時休館は要確認）", priceAdult: "650円", priceJuniorHigh: "450円", priceElementary: "450円", stayMinutes: 45,
+    officialUrl: "https://www.hakoneekidenmuseum.jp/", openingHours: "平日10:00〜16:30、土休日9:30〜17:00（入館は閉館30分前まで）", closedDays: "定休日なし（8/12・13営業予定、冬期・臨時変更は要確認）", priceAdult: "750円（2026年4月1日改定）", priceJuniorHigh: "550円（2026年4月1日改定）", priceElementary: "550円（2026年4月1日改定）", stayMinutes: 45,
     parkingAvailable: true, parkingSpaces: "無料5台、満車時は近隣有料駐車場", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 5,
     crowdLevel: 2, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "館内より箱根町港周辺の駐車場が先に混みやすい", bestTime: "10時台または15時以降", tags: ["雨天対応", "子ども向け", "駐車場あり", "滞在1時間以内", "トイレあり"], dataNote: "営業時間・料金・駐車台数は2026-07-27に公式案内を確認。専用駐車場が小さいため近隣駐車場も想定してください。", photoKind: "placeholder"
   },
@@ -289,27 +289,27 @@ export const spots: Spot[] = [
     id: "earth-museum", name: "神奈川県立生命の星・地球博物館", category: "美術館", latitude: 35.2453, longitude: 139.1212,
     description: "恐竜骨格、隕石、生命の進化などを大型展示で学べる県立博物館。小田原から箱根湯本へ向かう途中にあり、暑さや雨を避けやすい家族向け候補です。",
     officialUrl: "https://nh.kanagawa-museum.jp/", openingHours: "9:00〜16:30（入館16:00まで）", closedDays: "月曜ほか（8/12・13は開館予定、臨時休館は要確認）", priceAdult: "520円", priceJuniorHigh: "無料", priceElementary: "無料", stayMinutes: 100,
-    parkingAvailable: true, parkingSpaces: "無料110台", rainyDayFriendly: true, walkingLevel: 2, childFriendly: 5, juniorHighFriendly: 5,
+    parkingAvailable: true, parkingSpaces: "無料100台（ほか大型バス10台・福祉車両4台）", rainyDayFriendly: true, walkingLevel: 2, childFriendly: 5, juniorHighFriendly: 5,
     crowdLevel: 3, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "夏休みの午前〜昼は家族連れが増えやすい", bestTime: "9時の開館直後または14時以降", tags: ["雨天対応", "子ども向け", "駐車場あり", "飲食店あり", "トイレあり"], dataNote: "開館日・料金・駐車場は2026-07-27に公式案内を確認。特別展示・イベントは別途確認してください。", photoKind: "placeholder"
   },
   {
     id: "yunessun", name: "箱根小涌園ユネッサン", category: "エリア", latitude: 35.2399, longitude: 139.0506,
     description: "水着で遊べる温泉アミューズメントと日帰り温泉。子どもが体を動かせ、雨天や猛暑でも一日候補にしやすい施設です。",
-    officialUrl: "https://www.yunessun.com/", openingHours: "ユネッサン9:00〜19:00／森の湯11:00〜20:00（季節により変更）", closedDays: "2026年8/12・13は営業予定（公式の休館日は5月・12月、臨時変更は要確認）", priceAdult: "日程別料金・プランを公式で要確認", priceJuniorHigh: "日程別料金・プランを公式で要確認", priceElementary: "日程別料金・プランを公式で要確認", stayMinutes: 240,
-    parkingAvailable: true, parkingSpaces: "有料駐車場あり（台数・料金は公式で要確認）", rainyDayFriendly: true, walkingLevel: 3, childFriendly: 5, juniorHighFriendly: 5,
+    officialUrl: "https://www.yunessun.com/", openingHours: "8/12・13はユネッサン9:00〜19:00予定／森の湯11:00〜20:00（最終入場は公式で確認）", closedDays: "8/12・13は営業予定。8/8〜16は14時前の入場が完全予約制", priceAdult: "日程別料金・プランを公式で要確認", priceJuniorHigh: "日程別料金・プランを公式で要確認", priceElementary: "日程別料金・プランを公式で要確認", stayMinutes: 240,
+    parkingAvailable: true, parkingSpaces: "有料510台（第1・180台、第2・330台）", rainyDayFriendly: true, walkingLevel: 3, childFriendly: 5, juniorHighFriendly: 5,
     crowdLevel: 4, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "お盆期間は入場・更衣室・駐車場とも非常に混みやすい", bestTime: "開館直後、事前購入推奨", tags: ["子ども向け", "雨天対応", "駐車場あり", "飲食店あり", "トイレあり"], dataNote: "2026年休館日と通常営業時間は2026-07-27に公式案内を確認。お盆の営業時間・料金・入場制限は直前に再確認してください。", photoKind: "placeholder"
   },
   {
     id: "kamaboko-museum", name: "鈴廣かまぼこ博物館", category: "美術館", latitude: 35.2408, longitude: 139.1152,
     description: "かまぼこの歴史展示と手づくり体験を楽しめる無料の博物館。小田原駅と箱根湯本の間にあり、食事や買い物とまとめやすい立地です。",
-    officialUrl: "https://www.kamaboko.com/museum/", openingHours: "9:00〜17:00（体験受付・売店は別時間）", closedDays: "1月1日ほか（8/12・13開館予定。水曜は一部実演・体験内容変更あり）", priceAdult: "入館無料・体験は有料", priceJuniorHigh: "入館無料・体験は有料", priceElementary: "入館無料・体験は有料", stayMinutes: 75,
+    officialUrl: "https://www.kamaboko.com/museum/", openingHours: "9:00〜17:30（体験受付・売店は別時間）", closedDays: "1月1日ほか（8/12・13開館予定。水曜は一部実演・体験内容変更あり）", priceAdult: "入館無料・体験は有料", priceJuniorHigh: "入館無料・体験は有料", priceElementary: "入館無料・体験は有料", stayMinutes: 75,
     parkingAvailable: true, parkingSpaces: "鈴廣かまぼこの里 無料300台", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 5, juniorHighFriendly: 4,
     crowdLevel: 4, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "夏休みは体験枠と昼食時間帯が混みやすい", bestTime: "9時台または体験を事前予約", tags: ["無料", "雨天対応", "子ども向け", "駐車場あり", "飲食店あり", "トイレあり"], dataNote: "開館・駐車場・体験条件は2026-07-27に公式案内を確認。8/12は水曜のため実演内容を予約画面で確認してください。", photoKind: "placeholder"
   },
   {
     id: "odawara-castle", name: "小田原城", category: "エリア", latitude: 35.2508, longitude: 139.1537,
     description: "小田原駅から徒歩圏の城址公園と天守閣。レンタカー受取前後に組み込みやすく、短時間でも小田原らしさを感じられます。",
-    officialUrl: "https://odawaracastle.com/", openingHours: "天守閣9:00〜17:00（2026年夏は延長営業日あり）", closedDays: "8/12・13開館予定（12月の指定日・年末年始を除く）", priceAdult: "天守閣510円（共通券等は公式で要確認）", priceJuniorHigh: "200円", priceElementary: "200円", stayMinutes: 90,
+    officialUrl: "https://odawaracastle.com/", openingHours: "天守閣9:00〜17:00（最終入館16:30、8/12・13の延長有無は公式で確認）", closedDays: "8/12・13開館予定（12月第2水曜、12/31〜1/1を除く）", priceAdult: "天守閣1,000円（SAMURAI館を含む）", priceJuniorHigh: "小中学生300円", priceElementary: "小中学生300円", stayMinutes: 90,
     parkingAvailable: true, parkingSpaces: "専用駐車場なし・周辺市営／民間有料駐車場を利用", rainyDayFriendly: false, walkingLevel: 3, childFriendly: 5, juniorHighFriendly: 5,
     crowdLevel: 4, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "お盆は城址公園・駅周辺駐車場が混みやすい", bestTime: "9時台または16時前", tags: ["子ども向け", "トイレあり", "飲食店あり"], dataNote: "開館日・夏季延長営業は2026-07-27に公式案内を確認。駅から徒歩利用が楽で、車は周辺有料駐車場を利用してください。", photoKind: "placeholder"
   },
@@ -323,7 +323,7 @@ export const spots: Spot[] = [
   {
     id: "hakone-yuryo", name: "箱根湯寮", category: "エリア", latitude: 35.2314, longitude: 139.0963,
     description: "箱根湯本の里山にある日帰り温泉。帰路に短い休憩を入れやすく、貸切個室露天風呂を選べば家族で落ち着いて過ごせます。",
-    officialUrl: "https://www.hakoneyuryo.jp/", openingHours: "平日10:00〜20:00（最終受付19:00）", closedDays: "年中無休（8/12・13営業予定、メンテナンス休業は要確認）", priceAdult: "8/8〜16の特定日料金を公式で要確認", priceJuniorHigh: "料金区分を公式で要確認", priceElementary: "8/8〜16の特定日料金を公式で要確認", stayMinutes: 100,
+    officialUrl: "https://www.hakoneyuryo.jp/", openingHours: "平日10:00〜20:00（最終受付19:00）", closedDays: "年中無休（8/12・13営業予定、メンテナンス休業は要確認）", priceAdult: "大人（中学生以上）1,300円・8/8〜16休日料金", priceJuniorHigh: "1,300円・8/8〜16休日料金", priceElementary: "小学生600円", stayMinutes: 100,
     parkingAvailable: true, parkingSpaces: "無料92台", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 4,
     crowdLevel: 4, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "お盆の午後〜夕方は受付・駐車場とも混みやすい", bestTime: "10時台または予約可能な貸切利用", tags: ["雨天対応", "駐車場あり", "飲食店あり", "トイレあり"], dataNote: "営業時間・駐車台数・2026年8/8〜16の特定日料金案内を2026-07-27に公式で確認。年齢制限・利用規約も確認してください。", photoKind: "placeholder"
   },
@@ -344,8 +344,8 @@ export const spots: Spot[] = [
   {
     id: "la-terrazza-ashinoko", name: "ラ・テラッツァ芦ノ湖", category: "飲食", latitude: 35.2027, longitude: 139.0303,
     description: "芦ノ湖畔のイタリアンレストラン。薪窯ピッツァを家族でシェアしやすく、元箱根・成川美術館・箱根神社の移動とまとめられます。",
-    officialUrl: "https://www.ashinoko-terrace.jp/", openingHours: "平日10:30〜20:00頃（ラストオーダー・季節変更は要確認）", closedDays: "8月は無休予定（8/12・13営業見込み、臨時変更は要確認）", priceAdult: "ランチ目安 2,000〜4,000円", stayMinutes: 80,
-    parkingAvailable: true, parkingSpaces: "専用・提携駐車場の案内あり（約18台、利用条件を要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 5, juniorHighFriendly: 5,
+    officialUrl: "https://www.ashinoko-terrace.jp/", openingHours: "平日 ランチ11:00〜15:30／カフェ15:30〜16:50／ディナー17:00〜20:00", closedDays: "第2・第4火曜、不定休（8月は無休。8/12・13営業予定）", priceAdult: "ランチ目安 2,000〜4,000円", stayMinutes: 80,
+    parkingAvailable: true, parkingSpaces: "提携駐車場18台（店内飲食で2時間サービス）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 5, juniorHighFriendly: 5,
     crowdLevel: 4, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "お盆の昼は入店待ちと元箱根周辺道路・駐車場が混みやすい", bestTime: "10時半の開店直後または14時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け", "湖", "トイレあり"], dataNote: "営業時間・8月営業・駐車場案内は2026-07-27に公式／施設案内を確認。予約可否と駐車条件を直前に確認してください。", photoKind: "placeholder", reviewScore: "芦ノ湖畔の定番店。最新の外部評価は公式リンク先の予約案内から確認"
   },
   {
@@ -358,8 +358,8 @@ export const spots: Spot[] = [
   {
     id: "vert-bois", name: "ヴェル・ボワ（山のホテル）", category: "飲食", latitude: 35.2022, longitude: 139.0261,
     description: "芦ノ湖畔の山のホテルにあるフランス料理レストラン。箱根神社周辺で、駐車場所を確保して落ち着いた昼食を取りたい家族向けの候補です。",
-    officialUrl: "https://www.hakone-hoteldeyama.jp/restaurant/vertbois/", openingHours: "ランチ11:30〜14:00 L.O.／ディナー17:30〜20:00 L.O.（要予約確認）", closedDays: "ランチ火曜休（8/12水・8/13木は営業予定、臨時変更は要確認）", priceAdult: "ランチ目安 4,000〜8,000円", stayMinutes: 90,
-    parkingAvailable: true, parkingSpaces: "山のホテル宿泊・レストラン利用者用駐車場あり", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 5,
+    officialUrl: "https://www.hakone-hoteldeyama.jp/restaurant/vertbois/", openingHours: "ランチ11:30〜14:30（L.O.13:30）／ディナー17:30〜21:30（L.O.19:30・要予約）", closedDays: "ランチ火曜休（8/12水・8/13木は営業予定、臨時変更は要確認）", priceAdult: "ランチ目安 4,000〜8,000円", stayMinutes: 90,
+    parkingAvailable: true, parkingSpaces: "山のホテル無料駐車場 約100台", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 5,
     crowdLevel: 3, crowdSource: "forecast", crowdUpdatedAt: "2026-07-27", crowdHint: "お盆は予約枠と箱根神社周辺道路が混みやすい", bestTime: "11時半の予約枠", tags: ["飲食店あり", "駐車場あり", "雨天対応", "湖", "トイレあり"], dataNote: "2026年6月からの火曜ランチ定休、営業時間、駐車場を2026-07-27に公式案内で確認。予約と子ども同伴条件を再確認してください。", photoKind: "placeholder", reviewScore: "ホテル公式レストラン。最新の外部評価・空席は公式リンク先で確認"
   },
   {
