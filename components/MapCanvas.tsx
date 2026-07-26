@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { createRouteCache, getRoutePresentation } from "@/lib/routing";
 import { isSameLocation } from "@/lib/location";
 import { buildMapMarkers } from "@/lib/map-markers";
@@ -25,6 +25,7 @@ type Props = {
 };
 
 const crowdColor: Record<Spot["crowdLevel"], string> = { 1: "#1f9d6a", 2: "#e0a100", 3: "#e45b2b", 4: "#b52d36" };
+const crowdLabel: Record<Spot["crowdLevel"], string> = { 1: "比較的空いている", 2: "やや混雑", 3: "混雑", 4: "非常に混雑" };
 const routeColors = { 1: "#166cbe", 2: "#8b5cf6" } as const;
 const crowdLegend: Array<[Spot["crowdLevel"], string]> = [[1, "比較的空いている"], [2, "やや混雑"], [3, "混雑"], [4, "非常に混雑"]];
 const routeCache = createRouteCache();
@@ -179,7 +180,29 @@ export default function MapCanvas({ spots, selectedSpot, focusRequestId = 0, rou
         <FocusSelectedSpot spot={selectedSpot} requestId={focusRequestId} disabled={locationPickMode} />
         {spots.map((spot) => (
           <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel], undefined, selectedSpot?.id === spot.id)} zIndexOffset={selectedSpot?.id === spot.id ? 1000 : 0} eventHandlers={{ click: () => { if (!locationPickMode) onSelectSpot(spot); } }}>
-            <Tooltip permanent={selectedSpot?.id === spot.id} direction="top" offset={[0, selectedSpot?.id === spot.id ? -36 : -27]} opacity={1}>{selectedSpot?.id === spot.id ? `選択中：${spot.name}` : spot.name}</Tooltip>
+            <Tooltip direction="top" offset={[0, selectedSpot?.id === spot.id ? -36 : -27]} opacity={1}>{spot.name}</Tooltip>
+            <Popup minWidth={235} maxWidth={285} offset={[0, -28]}>
+              <article className="spot-map-popup" aria-label={`${spot.name}の施設情報`}>
+                <header>
+                  <span>{spot.category === "飲食" ? "食事処" : spot.category}</span>
+                  <h3>{spot.name}</h3>
+                </header>
+                <p>{spot.description}</p>
+                <dl>
+                  <div><dt>滞在目安</dt><dd>{spot.stayMinutes}分</dd></div>
+                  {spot.category === "飲食"
+                    ? <div><dt>価格目安</dt><dd>{spot.priceAdult ?? "要確認"}</dd></div>
+                    : <div><dt>混雑</dt><dd>{crowdLabel[spot.crowdLevel]}（{spot.crowdSource === "realtime" ? "リアルタイム" : spot.crowdSource === "forecast" ? "予測" : spot.crowdSource === "manual" ? "手動" : "一般傾向"}）</dd></div>}
+                  <div><dt>駐車場</dt><dd>{spot.parkingAvailable ? `あり${spot.parkingSpaces ? `・${spot.parkingSpaces}` : ""}` : "なし・要確認"}</dd></div>
+                  <div><dt>雨天</dt><dd>{spot.rainyDayFriendly ? "利用しやすい" : "屋外中心"}</dd></div>
+                  {spot.openingHours && <div><dt>営業時間</dt><dd>{spot.openingHours}</dd></div>}
+                </dl>
+                <div className="spot-map-popup-actions">
+                  <button type="button" onClick={(event) => { event.stopPropagation(); onSelectSpot(spot); }}>詳しい情報を見る</button>
+                  {(spot.officialUrl || spot.category === "飲食") && <a href={spot.officialUrl ?? `https://tabelog.com/rstLst/?sk=${encodeURIComponent(spot.name)}`} target="_blank" rel="noreferrer">{spot.officialUrl ? "公式サイト" : "食べログ"}</a>}
+                </div>
+              </article>
+            </Popup>
           </Marker>
         ))}
         {visibleDays.map((day) => routes[day]?.geometry && (
