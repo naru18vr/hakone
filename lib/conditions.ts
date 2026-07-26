@@ -5,6 +5,8 @@ export const defaultTravelConditions: TravelConditions = {
   endDate: "2026-08-13",
   day1StartTime: "11:15",
   day2StartTime: "09:00",
+  outboundTrainDepartureTime: "09:50",
+  outboundTrainMinutes: 40,
   arrivalPlace: "小田原駅",
   adults: 2,
   juniorHighStudents: 1,
@@ -16,6 +18,7 @@ export const defaultTravelConditions: TravelConditions = {
 const isTime = (value: unknown): value is string => typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 const isDate = (value: unknown): value is string => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value));
 const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 20;
+const isTrainMinutes = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 300;
 
 /** 不正な保存値を取り込まず、旧データは初期条件で安全に移行する。 */
 export const normalizeTravelConditions = (value: unknown): TravelConditions | undefined => {
@@ -31,6 +34,8 @@ export const normalizeTravelConditions = (value: unknown): TravelConditions | un
     endDate: raw.endDate,
     day1StartTime: raw.day1StartTime,
     day2StartTime: raw.day2StartTime,
+    outboundTrainDepartureTime: isTime(raw.outboundTrainDepartureTime) ? raw.outboundTrainDepartureTime : defaultTravelConditions.outboundTrainDepartureTime,
+    outboundTrainMinutes: isTrainMinutes(raw.outboundTrainMinutes) ? raw.outboundTrainMinutes : defaultTravelConditions.outboundTrainMinutes,
     arrivalPlace: raw.arrivalPlace.trim(),
     adults: raw.adults,
     juniorHighStudents: raw.juniorHighStudents,

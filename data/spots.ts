@@ -144,6 +144,34 @@ export const spots: Spot[] = [
     officialUrl: "https://moaart.or.jp/hakone/", openingHours: "4〜11月 9:30〜16:30（最終入館16:00）", closedDays: "木曜（祝休日・11月中は開館）・年末年始・展示替え日", priceAdult: "公式サイトで要確認", priceJuniorHigh: "公式サイトで要確認", priceElementary: "公式サイトで要確認", stayMinutes: 75,
     parkingAvailable: true, parkingSpaces: "無料100台（観光協会案内）", rainyDayFriendly: true, walkingLevel: 3, childFriendly: 2, juniorHighFriendly: 4,
     crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "午前の入館と庭園散策に来館が集まりやすい", bestTime: "14時以降", tags: ["雨天対応", "駐車場あり", "トイレあり"], dataNote: "営業時間・休館日を2026-07-26に公式案内で確認。企画・庭園状況は来館前に再確認してください。", photoKind: "placeholder"
+  },
+  {
+    id: "sakana-cuisine-ryo", name: "SAKANA CUISINE RYO", category: "飲食", latitude: 35.2565, longitude: 139.1581,
+    description: "小田原駅東口から近い海鮮料理店。駅前で車を返す前・受け取った直後の昼食候補として使いやすく、提携駐車場サービスがあります。",
+    officialUrl: "https://www.d-ryo.co.jp/", openingHours: "平日ランチ11:30〜14:30／土日祝11:00〜14:30（要確認）", closedDays: "不定休・公式サイトで要確認", priceAdult: "ランチ目安 1,500円〜", stayMinutes: 60,
+    parkingAvailable: true, parkingSpaces: "提携コインパーキング（3,000円以上でサービス券・条件は要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "土日祝の11〜13時は駅前・店内とも混みやすい", bestTime: "11時台前半または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "トイレあり"], dataNote: "駐車サービス・営業時間は2026-07-26に公式／店舗情報で確認。外部口コミ評価は変動する参考値です。", photoKind: "placeholder", reviewScore: "食べログ参考 3.64/5（2026-07-26確認）"
+  },
+  {
+    id: "caffe-terrazza-ukai", name: "カフェテラッツァ うかい", category: "飲食", latitude: 35.2640, longitude: 138.9999,
+    description: "箱根ガラスの森美術館内のカフェレストラン。美術館見学と同じ駐車場で完結でき、宿付近で移動を増やしたくない日の食事候補です。",
+    officialUrl: "https://www.hakone-garasunomori.jp/restaurant/", openingHours: "10:00〜17:00 L.O.（ランチ時間は曜日により変動・要確認）", closedDays: "美術館休館日に準ずる", priceAdult: "ランチ目安 1,800円〜", stayMinutes: 60,
+    parkingAvailable: true, parkingSpaces: "美術館隣接有料150台・第三駐車場無料（施設利用条件を要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "11〜14時は美術館来館者と重なりやすい", bestTime: "11時前または14時以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い"], dataNote: "営業時間・利用条件は2026-07-26に施設案内を確認。入館・駐車の条件は来館前に公式サイトで再確認してください。", photoKind: "placeholder", reviewScore: "美術館内のため、外部評価は参考扱い・公式情報を優先"
+  },
+  {
+    id: "yumoto-fujiya-lunch", name: "湯本富士屋ホテル レストラン", category: "飲食", latitude: 35.2328, longitude: 139.1035,
+    description: "箱根湯本駅近くのホテル内レストラン群。無料駐車場があり、天候に左右されにくい箱根湯本での食事候補として扱えます。",
+    officialUrl: "https://www.yumotofujiya.jp/restaurant/", openingHours: "店舗・曜日により異なる（公式サイトで要確認）", closedDays: "店舗により異なる", priceAdult: "ランチ目安 2,000円〜", stayMinutes: 70,
+    parkingAvailable: true, parkingSpaces: "ホテル無料駐車場（レストラン利用条件を要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "12時前後・週末はレストランと駅周辺道路が混みやすい", bestTime: "11時台または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "トイレあり"], dataNote: "駐車場・営業状況は2026-07-26に公式案内を確認。レストランごとの予約可否と料金を要確認。", photoKind: "placeholder", reviewScore: "店舗別の外部評価は公式／予約サイトで要確認"
+  },
+  {
+    id: "sengokuhara-prince-grill", name: "グリル（箱根仙石原プリンスホテル）", category: "飲食", latitude: 35.2435, longitude: 138.9980,
+    description: "仙石原のホテル内レストラン。宿付近から車で動きやすく、駐車場を確保しやすい食事候補として追加しています。",
+    officialUrl: "https://www.princehotels.co.jp/hakone-sengokuhara/restaurant/grill/", openingHours: "営業日・ランチ時間は公式サイトで要確認", closedDays: "公式サイトで要確認", priceAdult: "ランチ目安 1,500〜2,500円", stayMinutes: 70,
+    parkingAvailable: true, parkingSpaces: "ホテル駐車場あり（レストラン利用条件を要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 3,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "休日の12時台は予約・宿泊利用と重なりやすい", bestTime: "11時台または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い"], dataNote: "営業日・料金・駐車条件は2026-07-26に公式情報を確認。口コミ評価は変動するため予約サイトで再確認してください。", photoKind: "placeholder", reviewScore: "食べログ参考 3.29/5（2026-07-26確認）"
   }
 ];
 

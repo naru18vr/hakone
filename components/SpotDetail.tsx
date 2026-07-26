@@ -55,6 +55,7 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
         <Fact icon={<Clock3 size={15} />} label="営業時間" value={spot.openingHours ?? "要確認"} />
         <Fact icon={<Clock3 size={15} />} label="定休日" value={spot.closedDays ?? "要確認"} />
         <Fact icon={<Users size={15} />} label="料金（大人）" value={spot.priceAdult ?? "要確認"} />
+        {spot.reviewScore && <Fact icon={<Users size={15} />} label="参考評価" value={spot.reviewScore} />}
         <Fact icon={<Clock3 size={15} />} label="滞在目安" value={`${spot.stayMinutes}分`} />
         <Fact icon={<Car size={15} />} label="駐車場" value={spot.parkingAvailable ? spot.parkingSpaces ?? "あり" : "なし"} />
         <Fact icon={<CloudRain size={15} />} label="雨天対応" value={spot.rainyDayFriendly ? "比較的しやすい" : "屋外中心"} />

@@ -13,6 +13,7 @@ export type SpotCategory =
   | "絶景"
   | "湖"
   | "神社"
+  | "飲食"
   | "エリア"
   | "駅";
 
@@ -47,6 +48,8 @@ export type Spot = {
   tags: string[];
   dataNote: string;
   photoKind: "placeholder" | "official" | "user" | "external";
+  /** 外部口コミの参考値。リアルタイム・公式評価ではない。 */
+  reviewScore?: string;
 };
 
 export type ItemType = "spot" | "meal" | "hotel" | "break" | "rental_car" | "transport" | "free" | "travel_note" | "start" | "goal";
@@ -115,6 +118,7 @@ export type ReturnSettings = {
   rentalReturnMinutes: number;
   transferMinutes: number;
   delayBufferMinutes: number;
+  returnTrainMinutes?: number;
 };
 
 /** 旅行者が画面から変更できる、時刻計算にも使う基本条件。 */
@@ -123,6 +127,8 @@ export type TravelConditions = {
   endDate: string;
   day1StartTime: string;
   day2StartTime: string;
+  outboundTrainDepartureTime: string;
+  outboundTrainMinutes: number;
   arrivalPlace: string;
   adults: number;
   juniorHighStudents: number;

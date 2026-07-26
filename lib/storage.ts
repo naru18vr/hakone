@@ -12,7 +12,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(v
 const isDateString = (value: unknown): value is string => typeof value === "string" && Number.isFinite(Date.parse(value));
 const isDay = (value: unknown): value is 1 | 2 => value === 1 || value === 2;
 const isRouteDay = (value: unknown): value is 1 | 2 | "all" => isDay(value) || value === "all";
-const isReturnSettings = (value: unknown): value is ReturnSettings => isRecord(value) && isTimeValue(value.dinnerTime) && ["東京駅", "品川駅", "新宿駅", "渋谷駅"].includes(String(value.arrivalStation)) && ["rentalReturnMinutes", "transferMinutes", "delayBufferMinutes"].every((key) => typeof value[key] === "number" && Number.isFinite(value[key]) && value[key] >= 0);
+const isReturnSettings = (value: unknown): value is ReturnSettings => isRecord(value) && isTimeValue(value.dinnerTime) && ["東京駅", "品川駅", "新宿駅", "渋谷駅"].includes(String(value.arrivalStation)) && ["rentalReturnMinutes", "transferMinutes", "delayBufferMinutes"].every((key) => typeof value[key] === "number" && Number.isFinite(value[key]) && value[key] >= 0) && (value.returnTrainMinutes === undefined || (typeof value.returnTrainMinutes === "number" && Number.isInteger(value.returnTrainMinutes) && value.returnTrainMinutes >= 1 && value.returnTrainMinutes <= 300));
 const rentalActions: RentalCarAction[] = ["pickup", "return", "procedure", "refuel", "other"];
 const transportModes: TransportMode[] = ["train", "bus", "walk", "taxi", "other"];
 const transportActions: TransportAction[] = ["board", "exit", "transfer", "move"];

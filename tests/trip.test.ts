@@ -324,6 +324,14 @@ describe("帰京と混雑の比較情報", () => {
     expect(Number.isFinite(result.cases[0].dinnerMargin)).toBe(true);
   });
 
+  it("利用者が入力した帰りの電車時間を東京到着予測へ反映する", () => {
+    const day2 = clonePlan().filter((item) => item.day === 2);
+    const standard = calculateReturnTrip(day2, spots, { ...defaultReturnSettings, returnTrainMinutes: 40 });
+    const adjusted = calculateReturnTrip(day2, spots, { ...defaultReturnSettings, returnTrainMinutes: 55 });
+    expect(adjusted.cases[0].dinnerMargin).toBe(standard.cases[0].dinnerMargin - 15);
+    expect(adjusted.trainEstimate).toBe("55分（利用者設定）");
+  });
+
   it("混雑を施設・駐車場・道路と時間帯に分離する", () => {
     const crowd = crowdDetails(byId("owakudani"));
     expect(crowd.facility.source).not.toBe("realtime");
