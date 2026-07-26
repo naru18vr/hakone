@@ -54,10 +54,10 @@ function FocusSelectedSpot({ spot, requestId, disabled }: { spot?: Spot; request
   const map = useMap();
   useEffect(() => {
     if (!spot || disabled || requestId === 0) return;
-    map.flyTo([spot.latitude, spot.longitude], Math.max(map.getZoom(), 14), {
-      animate: true,
-      duration: 0.65,
-    });
+    // ドラッグ直後の慣性移動も止め、同じ行き先の再クリックを含めて
+    // 選択地点が必ずその場で地図中央へ来るようにする。
+    map.stop();
+    map.setView([spot.latitude, spot.longitude], Math.max(map.getZoom(), 14), { animate: false });
   }, [map, spot, requestId, disabled]);
   return null;
 }
