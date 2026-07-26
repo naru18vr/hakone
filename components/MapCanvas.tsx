@@ -12,6 +12,7 @@ type RouteModes = Record<1 | 2, RouteMode>;
 type Props = {
   spots: Spot[];
   selectedSpot?: Spot;
+  focusRequestId?: number;
   routeDay: 1 | 2 | "all";
   onSelectSpot: (spot: Spot) => void;
   itinerary: ItineraryItem[];
@@ -28,11 +29,11 @@ const routeColors = { 1: "#166cbe", 2: "#8b5cf6" } as const;
 const crowdLegend: Array<[Spot["crowdLevel"], string]> = [[1, "比較的空いている"], [2, "やや混雑"], [3, "混雑"], [4, "非常に混雑"]];
 const routeCache = createRouteCache();
 
-const markerIcon = (color: string, number?: number | string) => L.divIcon({
+const markerIcon = (color: string, number?: number | string, selected = false) => L.divIcon({
   className: "",
-  html: `<span class="map-pin" style="--pin:${color}"><i>${number ?? ""}</i></span>`,
-  iconSize: [30, 30],
-  iconAnchor: [15, 29],
+  html: `<span class="map-pin${selected ? " is-selected" : ""}" style="--pin:${color}"><i>${number ?? ""}</i></span>`,
+  iconSize: selected ? [40, 40] : [30, 30],
+  iconAnchor: selected ? [20, 38] : [15, 29],
 });
 const customMarkerIcon = (day: 1 | 2, number: number, symbol: string, label: string) => L.divIcon({
   className: "",
@@ -49,12 +50,24 @@ function FitToMarkers({ points }: { points: [number, number][] }) {
   return null;
 }
 
+function FocusSelectedSpot({ spot, requestId, disabled }: { spot?: Spot; requestId: number; disabled: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!spot || disabled || requestId === 0) return;
+    map.flyTo([spot.latitude, spot.longitude], Math.max(map.getZoom(), 14), {
+      animate: true,
+      duration: 0.65,
+    });
+  }, [map, spot, requestId, disabled]);
+  return null;
+}
+
 function LocationPickHandler({ enabled, onPick }: { enabled: boolean; onPick?: (location: CustomLocation) => void }) {
   useMapEvents({ click: (event) => { if (enabled) onPick?.({ latitude: Math.round(event.latlng.lat * 1_000_000) / 1_000_000, longitude: Math.round(event.latlng.lng * 1_000_000) / 1_000_000, source: "map" }); } });
   return null;
 }
 
-export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot, itinerary, onRouteModesChange, locationPickMode = false, locationPickCandidate, onLocationPickCandidate, onConfirmLocationPick, onCancelLocationPick }: Props) {
+export default function MapCanvas({ spots, selectedSpot, focusRequestId = 0, routeDay, onSelectSpot, itinerary, onRouteModesChange, locationPickMode = false, locationPickCandidate, onLocationPickCandidate, onConfirmLocationPick, onCancelLocationPick }: Props) {
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
   const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
   const requestId = useRef(0);
@@ -163,9 +176,10 @@ export default function MapCanvas({ spots, selectedSpot, routeDay, onSelectSpot,
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitToMarkers points={fitPoints} />
+        <FocusSelectedSpot spot={selectedSpot} requestId={focusRequestId} disabled={locationPickMode} />
         {spots.map((spot) => (
-          <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel])} eventHandlers={{ click: () => { if (!locationPickMode) onSelectSpot(spot); } }}>
-            <Tooltip direction="top" offset={[0, -27]} opacity={1}>{spot.name}</Tooltip>
+          <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel], undefined, selectedSpot?.id === spot.id)} zIndexOffset={selectedSpot?.id === spot.id ? 1000 : 0} eventHandlers={{ click: () => { if (!locationPickMode) onSelectSpot(spot); } }}>
+            <Tooltip permanent={selectedSpot?.id === spot.id} direction="top" offset={[0, selectedSpot?.id === spot.id ? -36 : -27]} opacity={1}>{selectedSpot?.id === spot.id ? `選択中：${spot.name}` : spot.name}</Tooltip>
           </Marker>
         ))}
         {visibleDays.map((day) => routes[day]?.geometry && (
