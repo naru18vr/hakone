@@ -21,8 +21,8 @@ import { CustomLocation, ItineraryItem, ReturnSettings, RouteMode, SamplePlan, S
 
 const MapCanvas = dynamic(() => import("@/components/MapCanvas"), { ssr: false, loading: () => <div className="map-loading">åœ°å›³ã‚’æº–å‚™ã—ã¦ã„ã¾ã™â€¦</div> });
 
-type FilterKey = "ç¾Žè¡“é¤¨" | "è‡ªç„¶" | "çµ¶æ™¯" | "æ¹–" | "ç¥žç¤¾" | "å­ã©ã‚‚å‘ã‘" | "é›¨å¤©å¯¾å¿œ" | "é§è»Šå ´ã‚ã‚Š" | "æ»žåœ¨1æ™‚é–“ä»¥å†…" | "æ··é›‘ãŒå°‘ãªã„" | "å®¿æ³Šæ–½è¨­ã‹ã‚‰è¿‘ã„" | "ç„¡æ–™" | "é£²é£Ÿåº—ã‚ã‚Š" | "ãƒˆã‚¤ãƒ¬ã‚ã‚Š";
-const primaryFilters: FilterKey[] = ["æ··é›‘ãŒå°‘ãªã„", "å­ã©ã‚‚å‘ã‘", "é›¨å¤©å¯¾å¿œ", "å®¿æ³Šæ–½è¨­ã‹ã‚‰è¿‘ã„", "æ»žåœ¨1æ™‚é–“ä»¥å†…"];
+type FilterKey = "ç¾Žè¡“é¤¨" | "è‡ªç„¶" | "çµ¶æ™¯" | "æ¹–" | "ç¥žç¤¾" | "é£Ÿäº‹å‡¦" | "å­ã©ã‚‚å‘ã‘" | "é›¨å¤©å¯¾å¿œ" | "é§è»Šå ´ã‚ã‚Š" | "æ»žåœ¨1æ™‚é–“ä»¥å†…" | "æ··é›‘ãŒå°‘ãªã„" | "å®¿æ³Šæ–½è¨­ã‹ã‚‰è¿‘ã„" | "ç„¡æ–™" | "é£²é£Ÿåº—ã‚ã‚Š" | "ãƒˆã‚¤ãƒ¬ã‚ã‚Š";
+const primaryFilters: FilterKey[] = ["é£Ÿäº‹å‡¦", "æ··é›‘ãŒå°‘ãªã„", "å­ã©ã‚‚å‘ã‘", "é›¨å¤©å¯¾å¿œ", "å®¿æ³Šæ–½è¨­ã‹ã‚‰è¿‘ã„", "æ»žåœ¨1æ™‚é–“ä»¥å†…"];
 const advancedFilters: FilterKey[] = ["ç¾Žè¡“é¤¨", "è‡ªç„¶", "çµ¶æ™¯", "æ¹–", "ç¥žç¤¾", "é§è»Šå ´ã‚ã‚Š", "ç„¡æ–™", "é£²é£Ÿåº—ã‚ã‚Š", "ãƒˆã‚¤ãƒ¬ã‚ã‚Š"];
 const STORAGE_KEY = "hakone-yurutabi-planner:v1";
 
@@ -136,6 +136,7 @@ export default function Home() {
     const textMatch = spot.name.includes(query) || spot.category.includes(query) || spot.tags.some((tag) => tag.includes(query));
     const filterMatch = activeFilters.every((filter) => {
       if (["ç¾Žè¡“é¤¨", "è‡ªç„¶", "çµ¶æ™¯", "æ¹–", "ç¥žç¤¾"].includes(filter)) return spot.category === filter;
+      if (filter === "é£Ÿäº‹å‡¦") return spot.category === "é£²é£Ÿ";
       if (filter === "å­ã©ã‚‚å‘ã‘") return spot.childFriendly >= 4;
       if (filter === "é›¨å¤©å¯¾å¿œ") return spot.rainyDayFriendly;
       if (filter === "é§è»Šå ´ã‚ã‚Š") return spot.parkingAvailable;
@@ -262,124 +263,164 @@ export default function Home() {
     <main>
       <header className="site-header">
         <div className="brand"><span className="brand-mark">ç®±</span><div><h1>ç®±æ ¹ã‚†ã‚‹æ—…ãƒ—ãƒ©ãƒ³ãƒŠãƒ¼</h1><p>åœ°å›³ã‚’è¦‹ãªãŒã‚‰ã€ç„¡ç†ã®ãªã„å®¶æ—æ—…è¡Œã‚’çµ„ã¿ç«‹ã¦ã‚‹</p></div></div>
-        <div className="header-badges"><span><CalendarDays size={15} /> {conditions.startDate}â€“{conditions.endDate.slice(5)}</span><span><Users size={15} /> {conditions.adults + conditions.juniorHighStudents + conditions.elementaryStudents}äºº</span><span><CarFront size={15} /> {conditions.transport}</span></div>
-      </header>
+        <div className="header-badges"><span><CalendarDays size={15} /> {conditions.startDate}â€“{conditions.endDate.slice(5)}</span><span><Users size={15} /> {conditions.adults + conditions.juniorHighStudents×½:¶‰žËkºwµçO^Ýš\Ú][Y_HÛÚ[™ÙO^Ê]™[
+HOˆÙ]š\Ú][YJ]™[\™Ù]˜[YJ_OÜ[ÛŒNŒÛÜ[ÛÜ[ÛŒLNŒÌÛÜ[ÛÜ[ÛŒMŒÌÛÜ[ÛÜ[ÛŒMŽŒÛÜ[ÛÜÙ[XÝÛX™[X™[¹i*y`&OÙ[XÝ˜[YO^ÝÙX]\ŸHÛÚ[™ÙO^Ê]™[
+HOˆÙ]ÙX]\Š]™[\™Ù]˜[YH\È¹¦m8à£ˆºfêˆ¸àcøà ¸à¢ˆŠ_OÜ[Û¹¦m8à£ÛÜ[ÛÜ[Û¸àcøà ¸à¢ÛÜ[ÛÜ[ÛºfêÛÜ[ÛÜÙ[XÝÛX™[Ù]‚ˆ]ˆÛ\ÜÓ˜[YOH›[ÙK\ÝÚ]ÚÜ[¹­íúfäxàáøàï8à¯ÏÜÜ[]ÛˆÛ\ÜÓ˜[YO^ØÜ›ÝÙ[ÙHOOH™›Ü™XØ\ÝˆÈ˜XÝ]™HˆˆˆŸHÛÛXÚÏ^Ê
+HOˆÙ]Ü›ÝÙ[ÙJ™›Ü™XØ\ÝŠ_O¹.¢9®+Ø]Û]ÛˆÛ\ÜÓ˜[YO^ØÜ›ÝÙ[ÙHOOH™Ù[™\˜[ˆÈ˜XÝ]™HˆˆˆŸHÛÛXÚÏ^Ê
+HOˆÙ]Ü›ÝÙ[ÙJ™Ù[™\˜[Š_O¹. :"+9`¯¹d$OØ]ÛÙ]‚ˆÛ\ÜÓ˜[YOHœÛÝ\˜ÙK[›ÝHÚ\˜ÛP[\Ú^™O^ÌMHÏˆØÜ›ÝÙ[ÙHOOH™›Ü™XØ\ÝˆÈ¸àb¹æá¸àîù¦`ºe¤ùn+øàîùi*y`&xà¤¹å*8àa8àgù.¢9®+8àiøàfxà ¸àê¸à¨¸àêøà¯øà©8àè9 áyh,xàiøàkøà`¸à¢¸ào¸àføà¤øà ˆˆˆ¹. :"+9æ¡8àj¹­íúfäy`¯¹d$xàiøàfxà ¸àê¸à¨¸àêøà¯øà©8àè9 áyh,xàiøàkøà`¸à¢¸ào¸àføà¤øà ˆŸOÜ‚ˆ]Z[ÈÛ\ÜÓ˜[YOHœ™]\›‹\Ù][™ÜÈÝ[[X\žO¹§ly.«8àiøàk¹i%zhçøàîùn,9.«9§hy.íÜÝ[[X\žO]ˆÛ\ÜÓ˜[YOHœØÙ[˜\š[ËYÜšYX™[¹i%zhçù.¢9k¦[œ]\OH[YHˆ˜[YO^Ü™]\›”Ù][™ÜË™[›™\•[Y_HÛÚ[™ÙO^Ê]™[
+HOˆÙ]™]\›”Ù][™ÜÊ
+˜[YJHOˆ
+È‹‹˜[YK[›™\•[YNˆ]™[\™Ù]˜[YHJJ_HÏÛX™[X™[¹b,9ç`9n#9§&úiáOÙ[XÝ˜[YO^Ü™]\›”Ù][™ÜË˜\œš]˜[Ý][ÛŸHÛÚ[™ÙO^Ê]™[
+HOˆÙ]™]\›”Ù][™ÜÊ
+˜[YJHOˆ
+È‹‹˜[YK\œš]˜[Ý][ÛŽˆ]™[\™Ù]˜[YH\È™]\›”Ù][™ÜÖÈ˜\œš]˜[Ý][Ûˆ—HJJ_OÜ[Û¹§ly.«:iáOÛÜ[ÛÜ[Û¹dàymçziáOÛÜ[ÛÜ[Û¹¥¬9k¯úiáOÛÜ[ÛÜ[Û¹®"ú,-úiáOÛÜ[ÛÜÙ[XÝÛX™[X™[¹n,8à¢¸àkºfîú.âˆ9¢`:) y¦`ºe¤Ï[œ]\OH›[X™\ˆˆZ[^Ì_HX^^ÌÌH˜[YO^Ü™]\›”Ù][™ÜËœ™]\›•˜Z[“Z[]\ÈÏÈHÛÚ[™ÙO^Ê]™[
+HOˆÙ]™]\›”Ù][™ÜÊ
+˜[YJHOˆ
+È‹‹˜[YK™]\›•˜Z[“Z[]\ÎˆX]›Z[ŠÌX]›X^
+K[X™\Š]™[\™Ù]˜[YJHJJHJJ_HÏÛX™[X™[º/å9cm9¢`:) y¦`ºe¤ÏÙ[XÝ˜[YO^Ü™]\›”Ù][™ÜËœ™[[™]\›“Z[]\ßHÛÚ[™ÙO^Ê]™[
+HOˆÙ]™]\›”Ù][™ÜÊ
+˜[YJHOˆ
+È‹‹˜[YK™[[™]\›“Z[]\Îˆ[X™\Š]™[\™Ù]˜[YJHJJ_OÜ[Ûˆ˜[YO^ÌŒOŒŒ9b!ÛÜ[ÛÜ[Ûˆ˜[YO^ÌÌOŒÌ9b!ÛÜ[ÛÜ[Ûˆ˜[YO^ÍO9b!ÛÜ[ÛÜÙ[XÝÛX™[X™[¹.eù£æøàîú`ayní¹/fz(åOÙ[XÝ˜[YO^Ü™]\›”Ù][™ÜË˜[œÙ™\“Z[]\È
+È™]\›”Ù][™ÜË™[^PY™™\“Z[]\ßHÛÚ[™ÙO^Ê]™[
+HOˆÙ]™]\›”Ù][™ÜÊ
+˜[YJHOˆ
+È‹‹˜[YK˜[œÙ™\“Z[]\Îˆ[X™\Š]™[\™Ù]˜[YJHH˜[YK™[^PY™™\“Z[]\ÈJJ_OÜ[Ûˆ˜[YO^Ì_OŒyb!ÛÜ[ÛÜ[Ûˆ˜[YO^ÌÍ_OŒÍyb!ÛÜ[ÛÜ[Ûˆ˜[YO^Í_Oyb!ÛÜ[ÛÜÙ[XÝÛX™[Ù]ÛX[¹l#ùå,9c§úiáxàbøà¢^Ü™]\›”Ù][™ÜË˜\œš]˜[Ý][ÛŸxàkù© ¹ë¥ÈÜ™]\›•š\˜Z[‘\Ý[X]_xà ¹k§úf¦øàk¹b%ú.â¹¦`¹b.øàîù.eú.â¹¦`ºe¤øàiøàkøà`¸à¢¸ào¸àføà¤øà ÜÛX[Ù]Z[Ï‚ˆÜÙXÝ[Û‚‚ˆÙXÝ[ÛˆÛ\ÜÓ˜[YOH˜Ø\™ÜÝËXØ\™ˆYHœÜÝË\[™[‚ˆ]ˆÛ\ÜÓ˜[YOHœÙXÝ[Û‹ZXY[™È]Ü[ˆÛ\ÜÓ˜[YOH™^YXœ›ÝÈº)¬ùabyg,ÜÜ[º(c8àcyab8à¤¹£¨¸àfOÚÙ]Ü[ˆÛ\ÜÓ˜[YOH˜ÛÝ[X˜YÙHžÝš\ÚX›TÜÝË›[™Ýy.íÜÜ[Ù]‚ˆX™[Û\ÜÓ˜[YOHœÙX\˜ÚX›ÞÙX\˜ÚÚ^™O^ÌMŸHÏ[œ]˜[YO^Ü]Y\ž_HÛÚ[™ÙO^Ê]™[
+HOˆÙ]]Y\žJ]™[\™Ù]˜[YJ_HXÙZÛ\Hº)¬ùabyg,8àîù§hy.í¸à¤¹©'9í(ˆˆÏÛX™[‚ˆ]ˆÛ\ÜÓ˜[YOH™š[\‹ZXY[™È\Ýš[\ˆÚ^™O^ÌM_HÏˆ9íg¸à¢º/¯8àoÏÙ]‚ˆ]ˆÛ\ÜÓ˜[YOH™š[\‹XÚ\ÈžÜš[X\žQš[\œË›X\
 
-      <div className={`app-grid ${mobileSheetOpen ? "sheet-open" : ""}`}>
-        <aside className="sidebar" aria-label="æ—…è¡Œè¨ˆç”»ãƒ‘ãƒãƒ«">
-          <button className="mobile-sheet-handle" onClick={() => setMobileSheetOpen((value) => !value)} aria-expanded={mobileSheetOpen}><span /><span>{mobileSheetOpen ? "è¨ˆç”»ãƒ‘ãƒãƒ«ã‚’é–‰ã˜ã‚‹" : "æ—…ç¨‹ãƒ»è¦³å…‰åœ°ã‚’é–‹ã"}</span>{mobileSheetOpen ? <X size={16} /> : <Menu size={16} />}</button>
-          <section className="card trip-card" id="trip-panel">
-            <div className="section-heading"><div><span className="eyebrow">ä»Šå›žã®æ—…</span><h2>æ—…è¡Œæ¡ä»¶</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>ä¿å­˜</button><button className="text-button" onClick={() => setShareOpen(true)}><Share2 size={14} /> å…±æœ‰</button><button className="text-button" onClick={() => window.print()}><Printer size={14} /> å°åˆ·</button><button className="text-button" onClick={() => { setToast("å°åˆ·ç”»é¢ã§ã€ãƒ—ãƒªãƒ³ã‚¿ãƒ¼ã¨ã—ã¦ã€ŒPDFã«ä¿å­˜ã€ã‚’é¸æŠžã—ã¦ãã ã•ã„ã€‚"); window.print(); }}>PDFç”¨ç”»é¢</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> åˆæœŸåŒ–</button></div></div>
-            <div className="trip-facts"><span><MapPinned size={15} /> {conditions.arrivalPlace}ãƒ»{conditions.day1StartTime}å‡ºç™º</span><span>âŒ‚ {hotelName}</span><span><CarFront size={15} /> {conditions.planPolicy}</span></div>
-            <label className="field-label">å®¿æ³Šæ–½è¨­ï¼ˆä»®åœ°ç‚¹ï¼‰<input value={hotelName} onChange={(event) => setHotelName(event.target.value)} /></label>
-            <details className="travel-condition-editor" open>
-              <summary>æ—¥ç¨‹ãƒ»å‡ºç™ºæ™‚åˆ»ãƒ»æ—…è¡Œæ¡ä»¶ã‚’ç·¨é›†</summary>
-              <div className="scenario-grid">
-                <label>é–‹å§‹æ—¥<input type="date" value={conditions.startDate} onChange={(event) => setConditions((value) => ({ ...value, startDate: event.target.value }))} /></label>
-                <label>çµ‚äº†æ—¥<input type="date" value={conditions.endDate} min={conditions.startDate} onChange={(event) => setConditions((value) => ({ ...value, endDate: event.target.value }))} /></label>
-                <label>8/12 å‡ºç™º<input type="time" value={conditions.day1StartTime} onChange={(event) => setConditions((value) => ({ ...value, day1StartTime: event.target.value }))} /></label>
-                <label>8/13 å‡ºç™º<input type="time" value={conditions.day2StartTime} onChange={(event) => setConditions((value) => ({ ...value, day2StartTime: event.target.value }))} /></label>
-                <label>è¡Œãã®é›»è»Š å‡ºç™º<input type="time" value={conditions.outboundTrainDepartureTime} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainDepartureTime: event.target.value }))} /></label>
-                <label>è¡Œãã®é›»è»Š æ‰€è¦æ™‚é–“<input type="number" min={1} max={300} value={conditions.outboundTrainMinutes} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainMinutes: Math.min(300, Math.max(1, Number(event.target.value) || 1)) }))} /></label>
-                <label>å‡ºç™ºãƒ»åˆ°ç€åœ°ç‚¹<input value={conditions.arrivalPlace} onChange={(event) => setConditions((value) => ({ ...value, arrivalPlace: event.target.value }))} /></label>
-                <label>ç§»å‹•æ‰‹æ®µ<select value={conditions.transport} onChange={(event) => setConditions((value) => ({ ...value, transport: event.target.value as TravelConditions["transport"] }))}><option>ãƒ¬ãƒ³ã‚¿ã‚«ãƒ¼</option><option>å…¬å…±äº¤é€š</option><option>ãã®ä»–</option></select></label>
-                <label>å¤§äºº<input type="number" min={0} max={20} value={conditions.adults} onChange={(event) => setConditions((value) => ({ ...value, adults: Math.max(0, Number(event.target.value) || 0) }))} /></label>
-                <label>ä¸­å­¦ç”Ÿ<input type="number" min={0} max={20} value={conditions.juniorHighStudents} onChange={(event) => setConditions((value) => ({ ...value, juniorHighStudents: Math.max(0, Number(event.target.value) || 0) }))} /></label>
-                <label>å°å­¦ç”Ÿ<input type="number" min={0} max={20} value={conditions.elementaryStudents} onChange={(event) => setConditions((value) => ({ ...value, elementaryStudents: Math.max(0, Number(event.target.value) || 0) }))} /></label>
-                <label>è¨ˆç”»æ–¹é‡<input value={conditions.planPolicy} onChange={(event) => setConditions((value) => ({ ...value, planPolicy: event.target.value }))} /></label>
-              </div>
-              <small>è¡Œãã®å°ç”°åŽŸåˆ°ç€è¦‹è¾¼ã¿ï¼š{formatEndTime(conditions.outboundTrainDepartureTime, conditions.outboundTrainMinutes)}ï¼ˆæ™‚åˆ»è¡¨æœªæŽ¥ç¶šã®æ¦‚ç®—ï¼‰<br />{conditions.startDate}ã€œ{conditions.endDate}ãƒ»{partyLabel(conditions)}ã€‚å‡ºç™ºæ™‚åˆ»ã‚’å¤‰æ›´ã™ã‚‹ã¨ã€æ—…ç¨‹ã®åˆ°ç€ãƒ»å‡ºç™ºæ™‚åˆ»ã¨å¸°äº¬äºˆæ¸¬ã‚’å†è¨ˆç®—ã—ã¾ã™ã€‚</small>
-            </details>
-            <div className="scenario-grid"><label>è¨ªå•æ™‚åˆ»<select value={visitTime} onChange={(event) => setVisitTime(event.target.value)}><option>09:00</option><option>11:30</option><option>14:30</option><option>16:00</option></select></label><label>å¤©å€™<select value={weather} onChange={(event) => setWeather(event.target.value as "æ™´ã‚Œ" | "é›¨" | "ãã‚‚ã‚Š")}><option>æ™´ã‚Œ</option><option>ãã‚‚ã‚Š</option><option>é›¨</option></select></label></div>
-            <div className="mode-switch"><span>æ··é›‘ãƒ‡ãƒ¼ã‚¿</span><button className={crowdMode === "forecast" ? "active" : ""} onClick={() => setCrowdMode("forecast")}>äºˆæ¸¬</button><button className={crowdMode === "general" ? "active" : ""} onClick={() => setCrowdMode("general")}>ä¸€èˆ¬å‚¾å‘</button></div>
-            <p className="source-note"><CircleAlert size={14} /> {crowdMode === "forecast" ? "ãŠç›†ãƒ»æ™‚é–“å¸¯ãƒ»å¤©å€™ã‚’ç”¨ã„ãŸäºˆæ¸¬ã§ã™ã€‚ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ æƒ…å ±ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚" : "ä¸€èˆ¬çš„ãªæ··é›‘å‚¾å‘ã§ã™ã€‚ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ æƒ…å ±ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚"}</p>
-            <details className="return-settings"><summary>æ±äº¬ã§ã®å¤•é£Ÿãƒ»å¸°äº¬æ¡ä»¶</summary><div className="scenario-grid"><label>å¤•é£Ÿäºˆå®š<input type="time" value={returnSettings.dinnerTime} onChange={(event) => setReturnSettings((value) => ({ ...value, dinnerTime: event.target.value }))} /></label><label>åˆ°ç€å¸Œæœ›é§…<select value={returnSettings.arrivalStation} onChange={(event) => setReturnSettings((value) => ({ ...value, arrivalStation: event.target.value as ReturnSettings["arrivalStation"] }))}><option>æ±äº¬é§…</option><option>å“å·é§…</option><option>æ–°å®¿é§…</option><option>æ¸‹è°·é§…</option></select></label><label>å¸°ã‚Šã®é›»è»Š æ‰€è¦æ™‚é–“<input type="number" min={1} max={300} value={returnSettings.returnTrainMinutes ?? 40} onChange={(event) => setReturnSettings((value) => ({ ...value, returnTrainMinutes: Math.min(300, Math.max(1, Number(event.target.value) || 1)) }))} /></label><label>è¿”å´æ‰€è¦æ™‚é–“<select value={returnSettings.rentalReturnMinutes} onChange={(event) => setReturnSettings((value) => ({ ...value, rentalReturnMinutes: Number(event.target.value) }))}><option value={20}>20åˆ†</option><option value={30}>30åˆ†</option><option value={40}>40åˆ†</option></select></label><label>ä¹—æ›ãƒ»é…å»¶ä½™è£•<select value={returnSettings.transferMinutes + returnSettings.delayBufferMinutes} onChange={(event) => setReturnSettings((value) => ({ ...value, transferMinutes: Number(event.target.value) - value.delayBufferMinutes }))}><option value={25}>25åˆ†</option><option value={35}>35åˆ†</option><option value={45}>45åˆ†</option></select></label></div><small>å°ç”°åŽŸé§…ã‹ã‚‰{returnSettings.arrivalStation}ã¯æ¦‚ç®— {returnTrip.trainEstimate}ã€‚å®Ÿéš›ã®åˆ—è»Šæ™‚åˆ»ãƒ»ä¹—è»Šæ™‚é–“ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚</small></details>
-          </section>
+š[\ŠHOˆ]ÛˆÙ^O^Ùš[\ŸHÛ\ÜÓ˜[YO^ØXÝ]™Qš[\œËš[˜ÛY\Êš[\ŠHÈ˜XÝ]™HˆˆˆŸHÛÛXÚÏ^Ê
+HOˆÙÙÛQš[\Šš[\Š_OžÙš[\ˆOOHºfê9i*ykï¹oçˆÈºfê8àiøà “ÒÈˆˆš[\ˆOOH¹k¯ù¬â¹¥¯z*+xàbøà¢z/äxàaˆÈ¹k¯øàbøà¢z/äxàaˆˆš[\ŸOØ]ÛŠ_OÙ]‚ˆ]Z[ÈÛ\ÜÓ˜[YOH˜Y˜[˜ÙYYš[\œÈÝ[[X\žOº*lùí,9§hy.íÜÝ[[X\žO]ˆÛ\ÜÓ˜[YOH™š[\‹XÚ\ÈžØY˜[˜ÙYš[\œË›X\
 
-          <section className="card spots-card" id="spots-panel">
-            <div className="section-heading"><div><span className="eyebrow">è¦³å…‰åœ°</span><h2>è¡Œãå…ˆã‚’æŽ¢ã™</h2></div><span className="count-badge">{visibleSpots.length}ä»¶</span></div>
-            <label className="search-box"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="è¦³å…‰åœ°ãƒ»æ¡ä»¶ã‚’æ¤œç´¢" /></label>
-            <div className="filter-heading"><ListFilter size={15} /> çµžã‚Šè¾¼ã¿</div>
-            <div className="filter-chips">{primaryFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter === "é›¨å¤©å¯¾å¿œ" ? "é›¨ã§ã‚‚OK" : filter === "å®¿æ³Šæ–½è¨­ã‹ã‚‰è¿‘ã„" ? "å®¿ã‹ã‚‰è¿‘ã„" : filter}</button>)}</div>
-            <details className="advanced-filters"><summary>è©³ç´°æ¡ä»¶</summary><div className="filter-chips">{advancedFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter}</button>)}</div></details>
-            <div className="distance-reference" aria-label="è¦³å…‰åœ°ä¸€è¦§ã®è·é›¢åŸºæº–"><span>è·é›¢ã®åŸºæº–</span>{(["hotel", "odawara", "last", "selected"] as const).map((key) => <button key={key} className={distanceReference === key ? "active" : ""} onClick={() => setDistanceReference(key)}>{({ hotel: "å®¿æ³Šæ–½è¨­", odawara: "å°ç”°åŽŸé§…", last: "æ—…ç¨‹ã®æœ€å¾Œ", selected: "é¸æŠžä¸­" })[key]}</button>)}</div>
-            <label className="sort-select">ä¸¦ã¹æ›¿ãˆ<select value={spotSort} onChange={(event) => setSpotSort(event.target.value as typeof spotSort)}><option value="near">åŸºæº–åœ°ç‚¹ã‹ã‚‰è¿‘ã„</option><option value="drive">è»Šæ™‚é–“ãŒçŸ­ã„</option><option value="add">è¿½åŠ æ™‚é–“ãŒçŸ­ã„</option><option value="crowd">æ··é›‘ãŒå°‘ãªã„</option><option value="child">å­ã©ã‚‚å‘ã‘</option><option value="rain">é›¨å¤©å¯¾å¿œ</option><option value="stay">æ»žåœ¨æ™‚é–“ãŒçŸ­ã„</option><option value="price">æ–™é‡‘ãŒå®‰ã„</option></select></label>
-            <div className="spot-list">{visibleSpots.map((spot) => { const straight = airDistanceKm(spot, referencePoint); const distance = straight * (straight < 3 ? 1.45 : 1.65); const minutes = Math.max(6, Math.round(distance * 2.2 + 4)); const addedDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))]; const crowd = crowdDetails(spot); return <button key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`} onClick={() => { setSelectedSpot(spot); setMobileSheetOpen(true); }}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small className="spot-distance">{({ hotel: "å®¿ã‹ã‚‰", odawara: "å°ç”°åŽŸé§…ã‹ã‚‰", last: "æ—…ç¨‹ã®æœ€å¾Œã‹ã‚‰", selected: "é¸æŠžä¸­ã®åœ°ç‚¹ã‹ã‚‰" })[distanceReference]} è»Š{minutes}åˆ†ãƒ»{distance.toFixed(1)}km</small><small>æ–½è¨­ {crowdText(crowd.facility.level)} Â· é§è»Š {crowdText(crowd.parking.level)} Â· é“è·¯ {crowdText(crowd.road.level)}</small><small>{spot.category} Â· æ»žåœ¨ {spot.stayMinutes}åˆ† Â· é›¨å¤©ï¼š{spot.rainyDayFriendly ? "â—Ž" : "â–³"}{addedDays.length ? ` Â· 8æœˆ${addedDays.map((day) => day === 1 ? "12" : "13").join("ãƒ»")}æ—¥ã«è¿½åŠ æ¸ˆã¿` : ""}</small></span><ChevronDown size={15} /></button>; })}</div>
-          </section>
+š[\ŠHOˆ]ÛˆÙ^O^Ùš[\ŸHÛ\ÜÓ˜[YO^ØXÝ]™Qš[\œËš[˜ÛY\Êš[\ŠHÈ˜XÝ]™HˆˆˆŸHÛÛXÚÏ^Ê
+HOˆÙÙÛQš[\Šš[\Š_OžÙš[\ŸOØ]ÛŠ_OÙ]Ù]Z[Ï‚ˆ]ˆÛ\ÜÓ˜[YOH™\Ý[˜ÙK\™Y™\™[˜ÙHˆ\šXK[X™[Hº)¬ùabyg,9. :)©øàkº-çzfè¹gî¹®¥ˆÜ[º-çzfè¸àk¹gî¹®¥ÜÜ[žÊÈšÝ[‹›Ù]Ø\˜H‹›\Ý‹œÙ[XÝY—H\ÈÛÛœÝ
+K›X\
 
-          <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onOpenAdd={setAddDialogSpot} onClose={() => setSelectedSpot(undefined)} />
+Ù^JHOˆ]ÛˆÙ^O^ÚÙ^_HÛ\ÜÓ˜[YO^Ù\Ý[˜ÙT™Y™\™[˜ÙHOOHÙ^HÈ˜XÝ]™HˆˆˆŸHÛÛXÚÏ^Ê
+HOˆÙ]\Ý[˜ÙT™Y™\™[˜ÙJÙ^J_OžÊÈÝ[ˆ¹k¯ù¬â¹¥¯z*+H‹Ù]Ø\˜Nˆ¹l#ùå,9c§úiáH‹\Ýˆ¹¥áyê"øàk¹§ 9o£‹Ù[XÝYˆº`n9¢§¹.+HˆJVÚÙ^W_OØ]ÛŠ_OÙ]‚ˆX™[Û\ÜÓ˜[YOHœÛÜ\Ù[XÝ¹.)¸àny¦ïøàbÙ[XÝ˜[YO^ÜÜÝÛÜHÛÚ[™ÙO^Ê]™[
+HOˆÙ]ÜÝÛÜ
+]™[\™Ù]˜[YH\È\[ÙˆÜÝÛÜ
+_OÜ[Ûˆ˜[YOH›™X\ˆ¹gî¹®¥¹g,9à®xàbøà¢z/äxàaÛÜ[ÛÜ[Ûˆ˜[YOH™š]™Hº.â¹¦`ºe¤øàc9çëxàaÛÜ[ÛÜ[Ûˆ˜[YOH˜Yº/ïyb¨9¦`ºe¤øàc9çëxàaÛÜ[ÛÜ[Ûˆ˜[YOH˜Ü›ÝÙ¹­íúfäxàc9l$xàj¸àaÛÜ[ÛÜ[Ûˆ˜[YOH˜Ú[¹kd8àjxà ¹d$xàdOÛÜ[ÛÜ[Ûˆ˜[YOHœ˜Z[ˆºfê9i*ykï¹oçÛÜ[ÛÜ[Ûˆ˜[YOHœÝ^H¹®ç¹g*9¦`ºe¤øàc9çëxàaÛÜ[ÛÜ[Ûˆ˜[YOHœšXÙH¹¥¦zaäxàc9k¢xàaÛÜ[ÛÜÙ[XÝÛX™[‚ˆ]ˆÛ\ÜÓ˜[YOHœÜÝ[\ÝžÝš\ÚX›TÜÝË›X\
 
-          <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} selectedSpot={selectedSpot} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} dayStartTime={activeDay === 1 ? conditions.day1StartTime : conditions.day2StartTime} locationPickMode={locationPickMode} onStartLocationPick={beginLocationPick} onCancelLocationPick={cancelLocationPick} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={updateItinerary} onClear={clearItinerary} /></div>
+ÜÝ
+HOˆÈÛÛœÝÝ˜ZYÚHZ\‘\Ý[˜ÙRÛJÜÝ™Y™\™[˜ÙTÚ[
+NÈÛÛœÝ\Ý[˜ÙHHÝ˜ZYÚ
+ˆ
+Ý˜ZYÚÈÈKHˆKJNÈÛÛœÝZ[]\ÈHX]›X^
+‹X]œ›Ý[™
+\Ý[˜ÙH
+ˆ‹Œˆ
+È
+JNÈÛÛœÝYY^\ÈHË‹‹›™]ÈÙ]
+][™\˜\žK™š[\Š
+][JHOˆ][K\HOOHœÜÝˆ	‰ˆ][KœÜÝYOOHÜÝšY
+K›X\
 
-          <section className={`card stress-card ${stress.label}`}>
-            <div className="section-heading"><div><span className="eyebrow">æ—…ç¨‹ã®è² è·</span><h2>{stress.label}</h2></div><span className="stress-score">{loadScore} / 100</span></div>
-            <div className="stress-gauge" role="progressbar" aria-label="æ—…ç¨‹ã®è² è·ã‚¹ã‚³ã‚¢" aria-valuemin={0} aria-valuemax={100} aria-valuenow={loadScore} aria-valuetext={`è² è· ${loadScore}ç‚¹ã€åˆ¤å®š ${stress.label}`}><span aria-hidden="true" style={{ width: `${loadScore}%` }} /><i aria-hidden="true" style={{ left: `${loadScore}%` }} /></div>
-            <div className="stress-scale"><span>ã‚†ã£ãŸã‚Š</span><span>å¿™ã—ã„</span></div>
-            <p>{getStressDescription(stress.label)}</p>
-            <div className="daily-stress" aria-label="æ—¥ã”ã¨ã®è² è·"><span>8æœˆ12æ—¥ <strong>{stress.days[1].score} / 100</strong> {stress.days[1].label}</span><span>8æœˆ13æ—¥ <strong>{stress.days[2].score} / 100</strong> {stress.days[2].label}</span></div>
-            <div className="stress-breakdown" aria-label="æ—…è¡Œå…¨ä½“ã®è² è·å†…è¨³">{stress.days[activeDay].breakdown.map((item) => <div key={item.label}><span>{item.label}<small>{item.note}</small></span><strong>{item.score}<em>/{item.max}</em></strong></div>)}</div>
-            <ul>{stress.suggestions.map((suggestion) => <li key={suggestion}><CheckCircle2 size={15} /><span>{suggestion}{suggestion.includes("ä¼‘æ†©") && <button className="text-button" onClick={addReliefBreak}>20åˆ†ã®ä¼‘æ†©ã‚’è¿½åŠ </button>}{suggestion.includes("å°ç”°åŽŸ") && <button className="text-button" onClick={() => { const last = [...day2].reverse().find((item) => item.type === "spot"); if (last) updateItinerary(itinerary.filter((item) => item.id !== last.id)); }}>æœ€å¾Œã®è¦³å…‰åœ°ã‚’å¤–ã™</button>}</span></li>)}</ul>
-          </section>
+][JHOˆ][K™^JJWNÈÛÛœÝÜ›ÝÙHÜ›ÝÙ]Z[ÊÜÝ
+NÈ™]\›ˆ]ÛˆÙ^O^ÜÜÝšYHÛ\ÜÓ˜[YO^ØÜÝ\›ÝÈ	ÜÙ[XÝYÜÝËšYOOHÜÝšYÈœÙ[XÝYˆˆˆŸXHÛÛXÚÏ^Ê
+HOˆÈÙ]Ù[XÝYÜÝ
+ÜÝ
+NÈÙ][Øš[TÚY]Ü[ŠYJNÈ_OÜ[ˆÛ\ÜÓ˜[YO^ØÜ›ÝÙ[Z[šH	ÜÜÝ˜Ü›ÝÙ]™[XHÏÜ[ˆÛ\ÜÓ˜[YOHœÜÝ\›ÝËXÛÛ[Ý›Û™ÏžÜÜÝ›˜[Y_OÜÝ›Û™ÏÛX[Û\ÜÓ˜[YOHœÜÝY\Ý[˜ÙHžÊÈÝ[ˆ¹k¯øàbøà¢H‹Ù]Ø\˜Nˆ¹l#ùå,9c§úiáxàbøà¢H‹\Ýˆ¹¥áyê"øàk¹§ 9o£8àbøà¢H‹Ù[XÝYˆº`n9¢§¹.+xàk¹g,9à®xàbøà¢HˆJVÙ\Ý[˜ÙT™Y™\™[˜ÙW_H:.âžÛZ[]\ßyb!¸àîÞÙ\Ý[˜ÙKÑš^Y
+J_ZÛOÜÛX[žÜÜÝ˜Ø]YÛÜžHOOHºhìºhçÈˆÈÛX[ºiä:.â¹h-ÜÜÝœ\šÚ[™Ð]˜Z[X›HÈ¸à`¸à¢ˆˆˆº) yè®º*£HŸH0­ÈÜÜÝœšXÙPY[ÏÈ¹¥¦zaäxàkùak9o#øàiùè®º*£HŸOÜÛX[ˆˆÛX[¹¥¯z*+HØÜ›ÝÙ^
+Ü›ÝÙ™˜XÚ[]K›]™[
+_H0­È:iä:.âˆØÜ›ÝÙ^
+Ü›ÝÙœ\šÚ[™Ë›]™[
+_H0­È:`dú-ëÈØÜ›ÝÙ^
+Ü›ÝÙœ›ØY›]™[
+_OÜÛX[ŸOÛX[žÜÜÝ˜Ø]YÛÜž_H0­È9®ç¹g*ÜÜÝœÝ^SZ[]\ßyb!ˆ0­È:fê9i*{ï&žÜÜÝœ˜Z[žQ^QœšY[™HÈ¸¥ãˆˆˆ¸¥¬ÈŸ^ØYY^\Ë›[™ÝÈ0­È9§"	ØYY^\Ë›X\
 
-          <section className="route-overview route-overview-panel">
-            <div className="overview-heading">æ—¥ã”ã¨ãƒ»æ—…è¡Œå…¨ä½“ã®åˆè¨ˆ</div>
-            <SummaryBlock title="8æœˆ12æ—¥" summary={summary1} isRecalculating={routeModes[1] === "loading"} />
-            <SummaryBlock title="8æœˆ13æ—¥" summary={summary2} isRecalculating={routeModes[2] === "loading"} />
-            <div className={`whole-trip ${isRecalculating ? "is-recalculating" : ""}`}><span>æ—…è¡Œå…¨ä½“</span>{isRecalculating ? <strong>å†è¨ˆç®—ä¸­â€¦</strong> : <><strong>{totalDistance.toFixed(1)} km Â· é‹è»¢ {minutesToText(totalDrive)} Â· æ»žåœ¨ {minutesToText(totalStay)}</strong><small>2æ—¥ç›®ã®å°ç”°åŽŸé§…åˆ°ç€ç›®å®‰ {formatEndTime(conditions.day2StartTime, summary2.totalMinutes)}</small></>}</div>
-            <p className="route-source-note">åœ°å›³çµŒè·¯ï¼š1æ—¥ç›® {routeModeLabel(routeModes[1])} ï¼ 2æ—¥ç›® {routeModeLabel(routeModes[2])}</p>
-          </section>
+^JHOˆ^HOOHHÈŒLˆˆˆŒLÈŠKš›Ú[Š¸àîÈŠ_y¥éxàjú/ïyb¨9®"8àoØˆˆŸOÜÛX[ÜÜ[Ú]œ›Û‘ÝÛˆÚ^™O^ÌM_HÏØ]ÛŽÈJ_OÙ]‚ˆÜÙXÝ[Û‚‚ˆÜÝ]Z[Ù^O^ÜÙ[XÝYÜÝËšYÏÈ™[\HŸHÜÝ^ÜÙ[XÝYÜÝH][™\˜\žO^Ú][™\˜\ž_H\Ý[˜ÙQœ›ÛRÝ[^ÜÙ[XÝYÜÝÈZ\‘\Ý[˜ÙRÛJÙ[XÝYÜÝÝ[Ú[
+H
+ˆKHˆ[™Yš[™YH\Ý[˜ÙQœ›ÛSÙ]Ø\˜O^ÜÙ[XÝYÜÝÈZ\‘\Ý[˜ÙRÛJÙ[XÝYÜÝ˜\ÙTÜÝÖÌJH
+ˆKHˆ[™Yš[™YHÛ“Ü[Y^ÜÙ]YX[ÙÔÜÝHÛÛÜÙO^Ê
+HOˆÙ]Ù[XÝYÜÝ
+[™Yš[™Y
+_HÏ‚‚ˆ]ˆÛ\ÜÓ˜[YOHš][™\˜\žK\[™[ˆYHš][™\˜\žK\[™[][™\˜\žT[›™\ˆ][™\˜\žO^Ú][™\˜\ž_HÜÝÏ^ÜÜÝßHÙ[XÝYÜÝ^ÜÙ[XÝYÜÝHXÝ]™Q^O^ØXÝ]™Q^_H›Ý]Q^O^Ü›Ý]Q^_H›Ý]S[ÙO^Ü›Ý]S[Ù\ÖØXÝ]™Q^W_H^TÝ\[YO^ØXÝ]™Q^HOOHHÈÛÛ™][ÛœË™^LTÝ\[YHˆÛÛ™][ÛœË™^L”Ý\[Y_HØØ][Û”XÚÓ[ÙO^ÛØØ][Û”XÚÓ[Ù_HÛ”Ý\ØØ][Û”XÚÏ^Ø™YÚ[“ØØ][Û”XÚßHÛØ[˜Ù[ØØ][Û”XÚÏ^ØØ[˜Ù[ØØ][Û”XÚßHÛXÝ]™Q^PÚ[™ÙO^ÜÙ]XÝ]™Q^_HÛ”›Ý]Q^PÚ[™ÙO^ÜÙ]›Ý]Q^_HÛÚ[™ÙO^Ý\]R][™\˜\ž_HÛÛX\^ØÛX\’][™\˜\ž_HÏÙ]‚‚ˆÙXÝ[ÛˆÛ\ÜÓ˜[YO^ØØ\™Ý™\ÜËXØ\™	ÜÝ™\ÜË›X™[XO‚ˆ]ˆÛ\ÜÓ˜[YOHœÙXÝ[Û‹ZXY[™È]Ü[ˆÛ\ÜÓ˜[YOH™^YXœ›ÝÈ¹¥áyê"øàkº,¨:#mÏÜÜ[žÜÝ™\ÜË›X™[OÚÙ]Ü[ˆÛ\ÜÓ˜[YOHœÝ™\ÜË\ØÛÜ™HžÛØYØÛÜ™_HÈLÜÜ[Ù]‚ˆ]ˆÛ\ÜÓ˜[YOHœÝ™\ÜËYØ]YÙHˆ›ÛOHœ›ÙÜ™\ÜØ˜\ˆˆ\šXK[X™[H¹¥áyê"øàkº,¨:#møà®xà¬øà¨ˆˆ\šXK]˜[Y[Z[^ÌH\šXK]˜[Y[X^^ÌLH\šXK]˜[Y[›ÝÏ^ÛØYØÛÜ™_H\šXK]˜[Y]^^Ø:,¨:#mÈ	ÛØYØÛÜ™_yà®xà yb)9k¦ˆ	ÜÝ™\ÜË›X™[XOÜ[ˆ\šXKZY[HYHˆÝ[O^ÞÈÚYˆ	ÛØYØÛÜ™_IX_HÏH\šXKZY[HYHˆÝ[O^ÞÈYˆ	ÛØYØÛÜ™_IX_HÏÙ]‚ˆ]ˆÛ\ÜÓ˜[YOHœÝ™\ÜË\ØØ[HÜ[¸à¡¸àhøàgøà¢ÜÜ[Ü[¹oæxàeøàaÜÜ[Ù]‚ˆžÙÙ]Ý™\ÜÑ\ØÜš\[ÛŠÝ™\ÜË›X™[
+_OÜ‚ˆ]ˆÛ\ÜÓ˜[YOH™Z[K\Ý™\ÜÈˆ\šXK[X™[H¹¥éxàe8àj8àkº,¨:#mÈÜ[Ž9§"L¹¥éHÝ›Û™ÏžÜÝ™\ÜË™^\ÖÌWKœØÛÜ™_HÈLÜÝ›Û™ÏˆÜÝ™\ÜË™^\ÖÌWK›X™[OÜÜ[Ü[Ž9§"Lù¥éHÝ›Û™ÏžÜÝ™\ÜË™^\ÖÌ—KœØÛÜ™_HÈLÜÝ›Û™ÏˆÜÝ™\ÜË™^\ÖÌ—K›X™[OÜÜ[Ù]‚ˆ]ˆÛ\ÜÓ˜[YOHœÝ™\ÜËXœ™XZÙÝÛˆˆ\šXK[X™[H¹¥áz(c9aj9/døàkº,¨:#mùa¡z*,ÈžÜÝ™\ÜË™^\ÖØXÝ]™Q^WK˜œ™XZÙÝÛ‹›X\
 
-          <section className="card return-card">
-            <div className="section-heading"><div><span className="eyebrow">8æœˆ13æ—¥ã®å¸°äº¬äºˆæ¸¬</span><h2>{returnSettings.dinnerTime}ã®å¤•é£Ÿã«é–“ã«åˆã†ï¼Ÿ</h2></div><span className={`return-verdict ${returnTrip.cases[0].verdict}`}>{returnTrip.cases[0].verdict}</span></div>
-            <div className="return-cases">{returnTrip.cases.map((entry) => <div key={entry.label}><strong>{entry.label}</strong><span>å°ç”°åŽŸç€ {entry.stationArrival} Â· è¿”å´å®Œäº† {entry.returnComplete}</span><span>{returnSettings.arrivalStation}ç€ {entry.tokyoArrival}</span><b>å¤•é£Ÿã¾ã§ {entry.dinnerMargin >= 0 ? minutesToText(entry.dinnerMargin) : `${minutesToText(-entry.dinnerMargin)}è¶…éŽ`}</b><small>{entry.verdict}</small></div>)}</div>
-            <p className="muted-note">ä»™çŸ³åŽŸå´ã®å°ç”°åŽŸé§…åˆ°ç€æŽ¨å¥¨ï¼šé€šå¸¸ {returnTrip.recommendedStationArrival[0]}ã¾ã§ï¼æ··é›‘ {returnTrip.recommendedStationArrival[1]}ã¾ã§ï¼å®‰å…¨é‡è¦– {returnTrip.recommendedStationArrival[2]}ã¾ã§<br />é›»è»Šæ™‚é–“ã¯ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ æ™‚åˆ»è¡¨ã§ã¯ãªãã€ä¹—è»Šæ™‚é–“ã®ã¿ã®ä¸€èˆ¬çš„ãªæ‰€è¦æ™‚é–“ã«ã‚ˆã‚‹æ¦‚ç®—ã§ã™ã€‚ä¹—æ›ä½™è£•ãƒ»é…å»¶ç”¨äºˆå‚™ã¯åˆ¥é€”åŠ ç®—ã—ã¦ã„ã¾ã™ã€‚å®Ÿéš›ã®åˆ—è»Šæ™‚åˆ»ã€é‹ä¼‘ã€é…å»¶ã¯å…¬å¼æƒ…å ±ã‚’ã”ç¢ºèªãã ã•ã„ã€‚</p>
-            {returnTrip.cases[1].dinnerMargin < 30 && <button className="secondary-button" onClick={() => { const last = [...day2].reverse().find((item) => item.type === "spot"); if (last) { updateItinerary(itinerary.filter((item) => item.id !== last.id)); setToast(`${last.title}ã‚’å¤–ã—ã€å¸°äº¬ä½™è£•ã‚’å†è¨ˆç®—ã—ã¾ã—ãŸ`); } }}>æœ€å¾Œã®è¦³å…‰åœ°ã‚’å¤–ã™</button>}
-          </section>
+][JHOˆ]ˆÙ^O^Ú][K›X™[OÜ[žÚ][K›X™[OÛX[žÚ][K››Ý_OÜÛX[ÜÜ[Ý›Û™ÏžÚ][KœØÛÜ™_O[O‹ÞÚ][K›X^OÙ[OÜÝ›Û™ÏÙ]Š_OÙ]‚ˆ[žÜÝ™\ÜËœÝYÙÙ\Ý[ÛœË›X\
 
-          <details className="optional-tools"><summary><Sparkles size={15} /> ã‚µãƒ³ãƒ—ãƒ«ãƒ—ãƒ©ãƒ³ã‚’æ¯”è¼ƒã—ã¦é©ç”¨</summary><div className="auto-plan-grid">{autoPlanCards(samplePlans, spots, returnSettings).map(({ title, description, plan, metrics }) => <button className="auto-plan-card" key={title} onClick={() => loadPlan(plan)}><strong>{title}</strong><span>{description}</span><small>èµ°è¡Œ {metrics.distance.toFixed(1)}km Â· æ··é›‘è€ƒæ…® {minutesToText(metrics.drive)}</small><small>æ—¥åˆ¥è² è· {metrics.day1} / {metrics.day2} Â· æ±äº¬ç€ {metrics.tokyo}</small><em>ã“ã®ãƒ—ãƒ©ãƒ³ã‚’é©ç”¨</em></button>)}</div></details>
-          <section className="data-disclaimer"><CloudRain size={17} /><div><strong>æƒ…å ±ã®æ‰±ã„</strong><p>å–¶æ¥­æ™‚é–“ãƒ»æ–™é‡‘ãƒ»é“è·¯çŠ¶æ³ã¯å¤‰å‹•ã—ã¾ã™ã€‚ãƒªã‚¢ãƒ«ã‚¿ã‚¤ãƒ æ¸‹æ»žãƒ»æ··é›‘ã¯æœªæŽ¥ç¶šã§ã€æŽ¨å®šæƒ…å ±ã¨ã—ã¦è¡¨ç¤ºã—ã¾ã™ã€‚</p></div></section>
-        </aside>
+ÝYÙÙ\Ý[ÛŠHOˆHÙ^O^ÜÝYÙÙ\Ý[ÛŸOÚXÚÐÚ\˜ÛLˆÚ^™O^ÌM_HÏÜ[žÜÝYÙÙ\Ý[ÛŸ^ÜÝYÙÙ\Ý[Û‹š[˜ÛY\Ê¹/$y¡ªHŠH	‰ˆ]ÛˆÛ\ÜÓ˜[YOH^X]ÛˆˆÛÛXÚÏ^ØY™[YYœ™XZßOŒŒ9b!¸àk¹/$y¡ªxà¤º/ïyb¨Ø]ÛŸ^ÜÝYÙÙ\Ý[Û‹š[˜ÛY\Ê¹l#ùå,9c§ÈŠH	‰ˆ]ÛˆÛ\ÜÓ˜[YOH^X]ÛˆˆÛÛXÚÏ^Ê
+HOˆÈÛÛœÝ\ÝHË‹‹™^L—Kœ™]™\œÙJ
+K™š[™
 
-        <section className="map-column">
-          <MapCanvas spots={visibleSpots} selectedSpot={selectedSpot} routeDay={routeDay} onSelectSpot={(spot) => { setSelectedSpot(spot); setMobileSheetOpen(true); }} itinerary={itinerary} onRouteModesChange={setRouteModes} locationPickMode={locationPickMode} locationPickCandidate={locationPickCandidate} onLocationPickCandidate={setLocationPickCandidate} onConfirmLocationPick={confirmLocationPick} onCancelLocationPick={cancelLocationPick} />
-        </section>
-      </div>
-      <nav className={`mobile-bottom-nav ${mobileSheetOpen ? "is-open" : ""} ${locationPickMode ? "is-location-picking" : ""}`} aria-label="ãƒ¢ãƒã‚¤ãƒ«ç”¨ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³">
-        <button onClick={() => setMobileSheetOpen(false)}><MapPinned size={16} /> åœ°å›³</button>
-        <button onClick={() => openMobilePanel("spots-panel")}><Search size={16} /> è¡Œãå…ˆ</button>
-        <button onClick={() => openMobilePanel("itinerary-panel")}><CalendarDays size={16} /> æ—…ç¨‹</button>
-      </nav>
-      {toast && <div className="toast" role="status" aria-live="polite"><CheckCircle2 size={17} /> {toast}</div>}
-      {shareError && <div className="toast" role="alert"><CircleAlert size={17} /> {shareError}</div>}
-      {addDialogSpot && <AddSpotDialog spot={addDialogSpot} itinerary={itinerary} spots={spots} returnSettings={returnSettings} onConfirm={(request) => addSpot(addDialogSpot, request)} onRemoveExisting={() => { const next = itinerary.filter((item) => !(item.type === "spot" && item.spotId === addDialogSpot.id)); updateItinerary(next); setToast(`${addDialogSpot.name}ã‚’æ—…ç¨‹ã‹ã‚‰å‰Šé™¤ã—ã¾ã—ãŸ`); }} onViewExisting={() => { const day = itinerary.find((item) => item.type === "spot" && item.spotId === addDialogSpot.id)?.day; if (day) { setActiveDay(day); setRouteDay(day); window.setTimeout(() => document.getElementById("itinerary-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); } }} onClose={() => setAddDialogSpot(undefined)} />}
-      {shareOpen && <ShareDialog state={currentTripState} onClose={() => setShareOpen(false)} onToast={setToast} />}
-      {pendingShare && <div className="dialog-backdrop"><section className="add-dialog shared-prompt" role="dialog" aria-modal="true" aria-labelledby="shared-prompt-title"><div className="dialog-heading"><div><span className="eyebrow">å…±æœ‰ã•ã‚ŒãŸæ—…ç¨‹</span><h2 id="shared-prompt-title">å…±æœ‰æ—…ç¨‹ã‚’é–‹ãã¾ã™ã‹ï¼Ÿ</h2></div></div><p>2026å¹´8æœˆ12æ—¥ã€œ13æ—¥ Â· 4äºº Â· è¦³å…‰åœ° {pendingShare.state.itinerary.filter((item) => item.type === "spot").length}ä»¶</p><p>æ±äº¬é§…åˆ°ç€äºˆæ¸¬ã¯ã€é©ç”¨å¾Œã«ç¾åœ¨ã®æ··é›‘è¨­å®šã§å†è¨ˆç®—ã—ã¾ã™ã€‚</p><div className="dialog-actions"><button className="secondary-button" onClick={() => setPendingShare(undefined)}>ç¾åœ¨ã®æ—…ç¨‹ã‚’ç¶­æŒ</button><button className="secondary-button" onClick={() => applySharedTrip(false)}>ä¸€æ™‚çš„ã«è¦‹ã‚‹</button><button className="primary-button" onClick={() => applySharedTrip(true)}>è‡ªåˆ†ã®æ—…ç¨‹ã¨ã—ã¦ä¿å­˜</button></div></section></div>}
-    </main>
-  );
-}
+][JHOˆ][K\HOOHœÜÝŠNÈYˆ
+\Ý
+H\]R][™\˜\žJ][™\˜\žK™š[\Š
+][JHOˆ][KšYOOH\ÝšY
+JNÈ_O¹§ 9o£8àkº)¬ùabyg,8à¤¹i%¸àfOØ]ÛŸOÜÜ[ÛOŠ_OÝ[‚ˆÜÙXÝ[Û‚‚ˆÙXÝ[ÛˆÛ\ÜÓ˜[YOHœ›Ý]K[Ý™\šY]È›Ý]K[Ý™\šY]Ë\[™[‚ˆ]ˆÛ\ÜÓ˜[YOH›Ý™\šY]ËZXY[™È¹¥éxàe8àj8àîù¥áz(c9aj9/døàk¹d":*"Ù]‚ˆÝ[[X\žP›ØÚÈ]OHŽ9§"L¹¥éHˆÝ[[X\žO^ÜÝ[[X\žL_H\Ô™XØ[Ý[][™Ï^Ü›Ý]S[Ù\ÖÌWHOOH›ØY[™ÈŸHÏ‚ˆÝ[[X\žP›ØÚÈ]OHŽ9§"Lù¥éHˆÝ[[X\žO^ÜÝ[[X\žLŸH\Ô™XØ[Ý[][™Ï^Ü›Ý]S[Ù\ÖÌ—HOOH›ØY[™ÈŸHÏ‚ˆ]ˆÛ\ÜÓ˜[YO^ØÚÛK]š\	Ú\Ô™XØ[Ý[][™ÈÈš\Ë\™XØ[Ý[][™ÈˆˆˆŸXOÜ[¹¥áz(c9aj9/dÏÜÜ[žÚ\Ô™XØ[Ý[][™ÈÈÝ›Û™Ï¹a£z*"9ë¥ù.+x )ÜÝ›Û™ÏˆˆÝ›Û™ÏžÝÝ[\Ý[˜ÙKÑš^Y
+J_HÛH0­È:`bú.èˆÛZ[]\ÕÕ^
+Ý[š]™J_H0­È9®ç¹g*ÛZ[]\ÕÕ^
+Ý[Ý^J_OÜÝ›Û™ÏÛX[Œ¹¥éyæë¸àk¹l#ùå,9c§úiáyb,9ç`9æë¹k¢HÙ›Ü›X][™[YJÛÛ™][ÛœË™^L”Ý\[YKÝ[[X\žL‹Ý[Z[]\Ê_OÜÛX[ÏŸOÙ]‚ˆÛ\ÜÓ˜[YOHœ›Ý]K\ÛÝ\˜ÙK[›ÝH¹g,9fìùíc:-ëûï&Œy¥éyæëˆÜ›Ý]S[ÙSX™[
+›Ý]S[Ù\ÖÌWJ_H;ï#È¹¥éyæëˆÜ›Ý]S[ÙSX™[
+›Ý]S[Ù\ÖÌ—J_OÜ‚ˆÜÙXÝ[Û‚‚ˆÙXÝ[ÛˆÛ\ÜÓ˜[YOH˜Ø\™™]\›‹XØ\™‚ˆ]ˆÛ\ÜÓ˜[YOHœÙXÝ[Û‹ZXY[™È]Ü[ˆÛ\ÜÓ˜[YOH™^YXœ›ÝÈŽ9§"Lù¥éxàk¹n,9.«9.¢9®+ÜÜ[žÜ™]\›”Ù][™ÜË™[›™\•[Y_xàk¹i%zhçøàjúe¤øàjùd"8àa»ï'ÏÚÙ]Ü[ˆÛ\ÜÓ˜[YO^Ø™]\›‹]™\™XÝ	Ü™]\›•š\˜Ø\Ù\ÖÌK™\™XÝXOžÜ™]\›•š\˜Ø\Ù\ÖÌK™\™XÝOÜÜ[Ù]‚ˆ]ˆÛ\ÜÓ˜[YOHœ™]\›‹XØ\Ù\ÈžÜ™]\›•š\˜Ø\Ù\Ë›X\
 
-function routeModeLabel(mode: RouteMode) {
-  return getRoutePresentation(mode).label;
-}
+[žJHOˆ]ˆÙ^O^Ù[žK›X™[OÝ›Û™ÏžÙ[žK›X™[OÜÝ›Û™ÏÜ[¹l#ùå,9c§ùç`Ù[žKœÝ][Û\œš]˜[H0­È:/å9cm9k£9.¡ˆÙ[žKœ™]\›ÛÛ\]_OÜÜ[Ü[žÜ™]\›”Ù][™ÜË˜\œš]˜[Ý][ÛŸyç`Ù[žKÚÞ[Ð\œš]˜[OÜÜ[¹i%zhçøào¸àiÈÙ[žK™[›™\“X\™Ú[ˆHÈZ[]\ÕÕ^
+[žK™[›™\“X\™Ú[ŠHˆ	ÛZ[]\ÕÕ^
+Y[žK™[›™\“X\™Ú[Š_z-¡z`c˜OØÛX[žÙ[žK™\™XÝOÜÛX[Ù]Š_OÙ]‚ˆÛ\ÜÓ˜[YOH›]]Y[›ÝH¹.æyçìùc§ù`m8àk¹l#ùå,9c§úiáyb,9ç`9£ª9ij;ï&º`&¹n.Ü™]\›•š\œ™XÛÛ[Y[™YÝ][Û\œš]˜[Ì_xào¸àiûï#ù­íúfäHÜ™]\›•š\œ™XÛÛ[Y[™YÝ][Û\œš]˜[ÌW_xào¸àiûï#ùk¢yaj:aãz)¥ˆÜ™]\›•š\œ™XÛÛ[Y[™YÝ][Û\œš]˜[Ì—_xào¸àiÏœˆÏºfîú.â¹¦`ºe¤øàkøàê¸à¨¸àêøà¯øà©8àè9¦`¹b.ú(j8àiøàkøàj¸àcøà y.eú.â¹¦`ºe¤øàk¸àoøàk¹. :"+9æ¡8àj¹¢`:) y¦`ºe¤øàjøà¢8à¢ù© ¹ë¥øàiøàfxà ¹.eù£æù/fz(åxàîú`ayní¹å*9.¢9`¦xàkùb)z`%9b¨9ë¥øàeøài¸àa8ào¸àfxà ¹k§úf¦øàk¹b%ú.â¹¦`¹b.øà z`bù/$xà z`ayní¸àkùak9o#ù áyh,xà¤¸àe9è®º*£xàcøàh8àexàa8à Ü‚ˆÜ™]\›•š\˜Ø\Ù\ÖÌWK™[›™\“X\™Ú[ˆÌ	‰ˆ]ÛˆÛ\ÜÓ˜[YOHœÙXÛÛ™\žKX]ÛˆˆÛÛXÚÏ^Ê
+HOˆÈÛÛœÝ\ÝHË‹‹™^L—Kœ™]™\œÙJ
+K™š[™
 
-function SummaryBlock({ title, summary, isRecalculating }: { title: string; summary: ReturnType<typeof calcTripSummary>["day1"]; isRecalculating: boolean }) {
-  if (isRecalculating) return <div className="summary-block is-recalculating" aria-live="polite"><strong>{title}</strong><span>è·é›¢ãƒ»æ™‚é–“ã‚’å†è¨ˆç®—ä¸­â€¦</span></div>;
-  return <div className="summary-block"><strong>{title}</strong><span>èµ°è¡Œ {summary.distanceKm.toFixed(1)} km</span><span>é€šå¸¸ {minutesToText(summary.baseDriveMinutes)}</span><span>æ··é›‘è€ƒæ…® {minutesToText(summary.predictedDriveMinutes)}</span><span>æ»žåœ¨ {minutesToText(summary.stayMinutes)}</span>{summary.waitMinutes > 0 && <span>å¸Œæœ›æ™‚åˆ»å¾…ã¡ {minutesToText(summary.waitMinutes)}</span>}</div>;
-}
+][JHOˆ][K\HOOHœÜÝŠNÈYˆ
+\Ý
+HÈ\]R][™\˜\žJ][™\˜\žK™š[\Š
+][JHOˆ][KšYOOH\ÝšY
+JNÈÙ]Ø\Ý
+	Û\Ý]_xà¤¹i%¸àeøà yn,9.«9/fz(åxà¤¹a£z*"9ë¥øàeøào¸àeøàgØ
+NÈH_O¹§ 9o£8àkº)¬ùabyg,8à¤¹i%¸àfOØ]ÛŸBˆÜÙXÝ[Û‚‚ˆ]Z[ÈÛ\ÜÓ˜[YOH›Ü[Û˜[]ÛÛÈÝ[[X\žOÜ\šÛ\ÈÚ^™O^ÌM_HÏˆ8à­xàìøàåøàêøàåøàêxàìøà¤¹«å:/ øàeøàiº`jyå*ÜÝ[[X\žO]ˆÛ\ÜÓ˜[YOH˜]]Ë\[‹YÜšYžØ]]Ô[Ø\™ÊØ[\T[œËÜÝË™]\›”Ù][™ÜÊK›X\
 
-function autoPlanCards(plans: SamplePlan[], spots: Spot[], returnSettings: ReturnSettings) {
-  const byId = Object.fromEntries(plans.map((plan) => [plan.id, plan]));
-  return [
-    { title: "æœ€ã‚‚æ¥½ãªãƒ—ãƒ©ãƒ³", description: "ä»™çŸ³åŽŸå†…ã§å®Œçµã€‚ç§»å‹•ã¨åˆ¤æ–­å›žæ•°ã‚’æœ€å°åŒ–ã€‚", plan: byId.sengokuhara },
-    { title: "ç¾Žè¡“é¤¨ä¸­å¿ƒ", description: "å±‹å†…ä¸­å¿ƒã§æš‘ã•ãƒ»é›¨ã«å¯¾å¿œã€‚", plan: byId["rain-museum"] },
-    { title: "ç®±æ ¹ã‚‰ã—ã•é‡è¦–", description: "æ—©æœã®å¤§æ¶Œè°·ã‚’å«ã‚€ã€æ¡ä»¶ä»˜ãã®æ¡ˆã€‚", plan: byId.owakudani },
-    { title: "æ··é›‘å›žé¿", description: "å…ƒç®±æ ¹ä¸­å¿ƒã‚’é¿ã‘ã€æ¹–å°»å´ã¸ã€‚", plan: byId.lake },
-  ].map((item) => {
-    const day1 = item.plan.itinerary.filter((entry) => entry.day === 1);
-    const day2 = item.plan.itinerary.filter((entry) => entry.day === 2);
-    const summary = calcTripSummary(day1, day2, spots);
-    const stress = assessStress(day1, day2, spots);
-    const returnTrip = calculateReturnTrip(day2, spots, returnSettings);
-    return { ...item, metrics: { distance: summary.distanceKm, drive: summary.predictedDriveMinutes, day1: stress.days[1].score, day2: stress.days[2].score, tokyo: returnTrip.cases[0].tokyoArrival } };
-  });
-}
+È]K\ØÜš\[Û‹[‹Y]šXÜÈJHOˆ]ÛˆÛ\ÜÓ˜[YOH˜]]Ë\[‹XØ\™ˆÙ^O^Ý]_HÛÛXÚÏ^Ê
+HOˆØY[Š[Š_OÝ›Û™ÏžÝ]_OÜÝ›Û™ÏÜ[žÙ\ØÜš\[ÛŸOÜÜ[ÛX[º-l:(cÛY]šXÜË™\Ý[˜ÙKÑš^Y
+J_ZÛH0­È9­íúfäz  ù¡kˆÛZ[]\ÕÕ^
+Y]šXÜË™š]™J_OÜÛX[ÛX[¹¥éyb)z,¨:#mÈÛY]šXÜË™^L_HÈÛY]šXÜË™^LŸH0­È9§ly.«9ç`ÛY]šXÜËÚÞ[ßOÜÛX[[O¸àdøàk¸àåøàêxàìøà¤º`jyå*Ù[OØ]ÛŠ_OÙ]Ù]Z[Ï‚ˆÙXÝ[ÛˆÛ\ÜÓ˜[YOH™]KY\ØÛZ[Y\ˆÛÝY˜Z[ˆÚ^™O^ÌMßHÏ]Ý›Û™Ï¹ áyh,xàk¹¢lxàaÜÝ›Û™Ï¹e­¹©ky¦`ºe¤øàîù¥¦zaäxàîú`dú-ëùâ­¹¬àxàkùi"ybåxàeøào¸àfxà ¸àê¸à¨¸àêøà¯øà©8àè9®"ù®ç¸àîù­íúfäxàkù§*¹£©yí¦¸àiøà y£ª9k¦¹ áyh,xàj8àeøàiº(j9é.¸àeøào¸àfxà ÜÙ]ÜÙXÝ[Û‚ˆØ\ÚYO‚‚ˆÙXÝ[ÛˆÛ\ÜÓ˜[YOH›X\XÛÛ[[ˆ‚ˆX\Ø[˜\ÈÜÝÏ^Ýš\ÚX›TÜÝßHÙ[XÝYÜÝ^ÜÙ[XÝYÜÝH›Ý]Q^O^Ü›Ý]Q^_HÛ”Ù[XÝÜÝ^ÊÜÝ
+HOˆÈÙ]Ù[XÝYÜÝ
+ÜÝ
+NÈÙ][Øš[TÚY]Ü[ŠYJNÈ_H][™\˜\žO^Ú][™\˜\ž_HÛ”›Ý]S[Ù\ÐÚ[™ÙO^ÜÙ]›Ý]S[Ù\ßHØØ][Û”XÚÓ[ÙO^ÛØØ][Û”XÚÓ[Ù_HØØ][Û”XÚÐØ[™Y]O^ÛØØ][Û”XÚÐØ[™Y]_HÛ“ØØ][Û”XÚÐØ[™Y]O^ÜÙ]ØØ][Û”XÚÐØ[™Y]_HÛÛÛ™š\›SØØ][Û”XÚÏ^ØÛÛ™š\›SØØ][Û”XÚßHÛØ[˜Ù[ØØ][Û”XÚÏ^ØØ[˜Ù[ØØ][Û”XÚßHÏ‚ˆÜÙXÝ[Û‚ˆÙ]‚ˆ˜]ˆÛ\ÜÓ˜[YO^Ø[Øš[KX›ÝÛK[˜]ˆ	Û[Øš[TÚY]Ü[ˆÈš\Ë[Ü[ˆˆˆˆŸH	ÛØØ][Û”XÚÓ[ÙHÈš\Ë[ØØ][Û‹\XÚÚ[™ÈˆˆˆŸXH\šXK[X™[H¸àè¸àä8à©8àêùå*8àâ¸àäøà¬¸àï8à­øàéøàìÈ‚ˆ]ÛˆÛÛXÚÏ^Ê
+HOˆÙ][Øš[TÚY]Ü[Š˜[ÙJ_OX\[›™YÚ^™O^ÌMŸHÏˆ9g,9fìÏØ]Û‚ˆ]ÛˆÛÛXÚÏ^Ê
+HOˆÜ[“[Øš[T[™[
+œÜÝË\[™[Š_OÙX\˜ÚÚ^™O^ÌMŸHÏˆ:(c8àcyabØ]Û‚ˆ]ÛˆÛÛXÚÏ^Ê
+HOˆÜ[“[Øš[T[™[
+š][™\˜\žK\[™[Š_OØ[[™\‘^\ÈÚ^™O^ÌMŸHÏˆ9¥áyê"ÏØ]Û‚ˆÛ˜]‚ˆÝØ\Ý	‰ˆ]ˆÛ\ÜÓ˜[YOHØ\Ýˆ›ÛOHœÝ]\Èˆ\šXK[]™OHœÛ]HÚXÚÐÚ\˜ÛLˆÚ^™O^ÌMßHÏˆÝØ\ÝOÙ]ŸBˆÜÚ\™Q\œ›Üˆ	‰ˆ]ˆÛ\ÜÓ˜[YOHØ\Ýˆ›ÛOH˜[\Ú\˜ÛP[\Ú^™O^ÌMßHÏˆÜÚ\™Q\œ›ÜŸOÙ]ŸBˆØYX[ÙÔÜÝ	‰ˆYÜÝX[ÙÈÜÝ^ØYX[ÙÔÜÝH][™\˜\žO^Ú][™\˜\ž_HÜÝÏ^ÜÜÝßH™]\›”Ù][™ÜÏ^Ü™]\›”Ù][™ÜßHÛÛÛ™š\›O^Ê™\]Y\Ý
+HOˆYÜÝ
+YX[ÙÔÜÝ™\]Y\Ý
+_HÛ”™[[Ý™Q^\Ý[™Ï^Ê
+HOˆÈÛÛœÝ™^H][™\˜\žK™š[\Š
+][JHOˆJ][K\HOOHœÜÝˆ	‰ˆ][KœÜÝYOOHYX[ÙÔÜÝšY
+JNÈ\]R][™\˜\žJ™^
+NÈÙ]Ø\Ý
+	ØYX[ÙÔÜÝ›˜[Y_xà¤¹¥áyê"øàbøà¢ybbºfi8àeøào¸àeøàgØ
+NÈ_HÛ•šY]Ñ^\Ý[™Ï^Ê
+HOˆÈÛÛœÝ^HH][™\˜\žK™š[™
+
+][JHOˆ][K\HOOHœÜÝˆ	‰ˆ][KœÜÝYOOHYX[ÙÔÜÝšY
+OË™^NÈYˆ
+^JHÈÙ]XÝ]™Q^J^JNÈÙ]›Ý]Q^J^JNÈÚ[™ÝËœÙ][Y[Ý]
+
+
+HOˆØÝ[Y[™Ù][[Y[žRY
+š][™\˜\žK\[™[ŠOËœØÜ›Û[ÕšY]ÊÈ™Z]š[ÜŽˆœÛ[ÛÝ‹›ØÚÎˆœÝ\ˆJK
+NÈH_HÛÛÜÙO^Ê
+HOˆÙ]YX[ÙÔÜÝ
+[™Yš[™Y
+_HÏŸBˆÜÚ\™SÜ[ˆ	‰ˆÚ\™QX[ÙÈÝ]O^ØÝ\œ™[š\Ý]_HÛÛÜÙO^Ê
+HOˆÙ]Ú\™SÜ[Š˜[ÙJ_HÛ•Ø\Ý^ÜÙ]Ø\ÝHÏŸBˆÜ[™[™ÔÚ\™H	‰ˆ]ˆÛ\ÜÓ˜[YOH™X[ÙËX˜XÚÙ›ÜÙXÝ[ÛˆÛ\ÜÓ˜[YOH˜YYX[ÙÈÚ\™Y\›Û\ˆ›ÛOH™X[ÙÈˆ\šXK[[Ù[HYHˆ\šXK[X™[YžOHœÚ\™Y\›Û\]]H]ˆÛ\ÜÓ˜[YOH™X[ÙËZXY[™È]Ü[ˆÛ\ÜÓ˜[YOH™^YXœ›ÝÈ¹aly§"xàexà£8àgù¥áyê"ÏÜÜ[ˆYHœÚ\™Y\›Û\]]H¹aly§"y¥áyê"øà¤ºe¢øàcxào¸àfxàbûï'ÏÚÙ]Ù]ŒŒ¹nm9§"L¹¥éxà'Lù¥éH0­È9.®ˆ0­È:)¬ùabyg,Ü[™[™ÔÚ\™KœÝ]Kš][™\˜\žK™š[\Š
+][JHOˆ][K\HOOHœÜÝŠK›[™Ýy.íÜ¹§ly.«:iáyb,9ç`9.¢9®+8àkøà z`jyå*9o£8àjùãï¹g*8àk¹­íúfäz*+yk¦¸àiùa£z*"9ë¥øàeøào¸àfxà Ü]ˆÛ\ÜÓ˜[YOH™X[ÙËXXÝ[ÛœÈ]ÛˆÛ\ÜÓ˜[YOHœÙXÛÛ™\žKX]ÛˆˆÛÛXÚÏ^Ê
+HOˆÙ][™[™ÔÚ\™J[™Yš[™Y
+_O¹ãï¹g*8àk¹¥áyê"øà¤¹í«y£ OØ]Û]ÛˆÛ\ÜÓ˜[YOHœÙXÛÛ™\žKX]ÛˆˆÛÛXÚÏ^Ê
+HOˆ\TÚ\™Yš\
+˜[ÙJ_O¹. 9¦`¹æ¡8àjú)¢øà¢ÏØ]Û]ÛˆÛ\ÜÓ˜[YOHœš[X\žKX]ÛˆˆÛÛXÚÏ^Ê
+HOˆ\TÚ\™Yš\
+YJ_Oº!ê¹b!¸àk¹¥áyê"øàj8àeøài¹/çykfØ]ÛÙ]ÜÙXÝ[ÛÙ]ŸBˆÛXZ[‚ˆ
+NÂŸB‚™[˜Ý[Ûˆ›Ý]S[ÙSX™[
+[ÙNˆ›Ý]S[ÙJHÂˆ™]\›ˆÙ]›Ý]T™\Ù[][ÛŠ[ÙJK›X™[ÂŸB‚™[˜Ý[ÛˆÝ[[X\žP›ØÚÊÈ]KÝ[[X\žK\Ô™XØ[Ý[][™ÈNˆÈ]NˆÝš[™ÎÈÝ[[X\žNˆ™]\›•\O\[ÙˆØ[Õš\Ý[[X\žO–È™^LH—NÈ\Ô™XØ[Ý[][™Îˆ›ÛÛX[ˆJHÂˆYˆ
+\Ô™XØ[Ý[][™ÊH™]\›ˆ]ˆÛ\ÜÓ˜[YOHœÝ[[X\žKX›ØÚÈ\Ë\™XØ[Ý[][™Èˆ\šXK[]™OHœÛ]HÝ›Û™ÏžÝ]_OÜÝ›Û™ÏÜ[º-çzfè¸àîù¦`ºe¤øà¤¹a£z*"9ë¥ù.+x )ÜÜ[Ù]ŽÂˆ™]\›ˆ]ˆÛ\ÜÓ˜[YOHœÝ[[X\žKX›ØÚÈÝ›Û™ÏžÝ]_OÜÝ›Û™ÏÜ[º-l:(cÜÝ[[X\žK™\Ý[˜ÙRÛKÑš^Y
+J_HÛOÜÜ[Ü[º`&¹n.ÛZ[]\ÕÕ^
+Ý[[X\žK˜˜\ÙQš]™SZ[]\Ê_OÜÜ[Ü[¹­íúfäz  ù¡kˆÛZ[]\ÕÕ^
+Ý[[X\žKœ™YXÝYš]™SZ[]\Ê_OÜÜ[Ü[¹®ç¹g*ÛZ[]\ÕÕ^
+Ý[[X\žKœÝ^SZ[]\Ê_OÜÜ[žÜÝ[[X\žKØZ]Z[]\Èˆ	‰ˆÜ[¹n#9§&ù¦`¹b.ùo¡xàhHÛZ[]\ÕÕ^
+Ý[[X\žKØZ]Z[]\Ê_OÜÜ[ŸOÙ]ŽÂŸB‚™[˜Ý[Ûˆ]]Ô[Ø\™Ê[œÎˆØ[\T[–×KÜÝÎˆÜÝ×K™]\›”Ù][™ÜÎˆ™]\›”Ù][™ÜÊHÂˆÛÛœÝžRYHØš™XÝ™œ›ÛQ[šY\Ê[œË›X\
+
+[ŠHOˆÜ[‹šY[—JJNÂˆ™]\›ˆÂˆÈ]Nˆ¹§ 8à ¹©oxàj¸àåøàêxàìÈ‹\ØÜš\[ÛŽˆ¹.æyçìùc§ùa¡xàiùk£9íd8à ¹éîùbåxàj9b)9¥«yfç¹¥l8à¤¹§ 9l#ùc%¸à ˆ‹[ŽˆžRYœÙ[™ÛÚÝZ\˜HKˆÈ]Nˆ¹ï£º(dúi*9.+yoàÈ‹\ØÜš\[ÛŽˆ¹lbùa¡y.+yoàøàiù¦¤xàexàîúfê8àjùkï¹oç8à ˆ‹[ŽˆžRYÈœ˜Z[‹[]\Ù][H—HKˆÈ]Nˆ¹ë¬y¨.xà¢xàeøàezaãz)¥ˆ‹\ØÜš\[ÛŽˆ¹¥êy§'xàk¹i)ù­£:,-øà¤¹d*øà 8à y§hy.í¹.æ8àcxàk¹¨b8à ˆ‹[ŽˆžRY›ÝØZÝY[šHKˆÈ]Nˆ¹­íúfäyfçº`oÈ‹\ØÜš\[ÛŽˆ¹a`ùë¬y¨.y.+yoàøà¤º`oøàdxà y®e¹l.ù`m8àn8à ˆ‹[ŽˆžRY›ZÙHKˆK›X\
+
+][JHOˆÂˆÛÛœÝ^LHH][Kœ[‹š][™\˜\žK™š[\Š
+[žJHOˆ[žK™^HOOHJNÂˆÛÛœÝ^LˆH][Kœ[‹š][™\˜\žK™š[\Š
+[žJHOˆ[žK™^HOOHŠNÂˆÛÛœÝÝ[[X\žHHØ[Õš\Ý[[X\žJ^LK^L‹ÜÝÊNÂˆÛÛœÝÝ™\ÜÈH\ÜÙ\ÜÔÝ™\ÜÊ^LK^L‹ÜÝÊNÂˆÛÛœÝ™]\›•š\HØ[Ý[]T™]\›•š\
+^L‹ÜÝË™]\›”Ù][™ÜÊNÂˆ™]\›ˆÈ‹‹š][KY]šXÜÎˆÈ\Ý[˜ÙNˆÝ[[X\žK™\Ý[˜ÙRÛKš]™NˆÝ[[X\žKœ™YXÝYš]™SZ[]\Ë^LNˆÝ™\ÜË™^\ÖÌWKœØÛÜ™K^LŽˆÝ™\ÜË™^\ÖÌ—KœØÛÜ™KÚÞ[Îˆ™]\›•š\˜Ø\Ù\ÖÌKÚÞ[Ð\œš]˜[HNÂˆJNÂŸB
