@@ -172,7 +172,15 @@ export default function Home() {
   const returnTrip = calculateReturnTrip(day2, spots, returnSettings, conditions.day2StartTime);
   const currentTripState: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions };
 
-  const toggleFilter = (filter: FilterKey) => setActiveFilters((current) => current.includes(filter) ? current.filter((item) => item !== filter) : [...current, filter]);
+  const toggleFilter = (filter: FilterKey) => {
+    if (filter === "食事処") {
+      // 食事処は他の条件や検索語が残ると0件になりやすいため、単独で表示する。
+      setQuery("");
+      setActiveFilters((current) => current.length === 1 && current[0] === "食事処" ? [] : ["食事処"]);
+      return;
+    }
+    setActiveFilters((current) => current.includes(filter) ? current.filter((item) => item !== filter) : [...current, filter]);
+  };
   const updateItinerary = (next: ItineraryItem[]) => {
     setRouteModes({ 1: "loading", 2: "loading" });
     setItinerary(next);
