@@ -263,7 +263,7 @@ export default function Home() {
     <main>
       <header className="site-header">
         <div className="brand"><span className="brand-mark">箱</span><div><h1>箱根ゆる旅プランナー</h1><p>地図を見ながら、無理のない家族旅行を組み立てる</p></div></div>
-        <div className="header-badges"><span><CalendarDays size={15} /> {conditions.startDate}–{conditions.endDate.slice(5)}</span><span><Users size={15} /> {conditions.adults + conditions.juniorHighStudents + conditions.elementaryStudents}人</span><span><CarFront size={15} /> {conditions.transport}</span></div>
+        <div className="header-badges"><button type="button" className="header-food-link" onClick={() => { setActiveFilters(["食事処"]); openMobilePanel("spots-panel"); }} aria-label="食事処だけを表示する"><span>🍽</span> 食事処を探す</button><span><CalendarDays size={15} /> {conditions.startDate}–{conditions.endDate.slice(5)}</span><span><Users size={15} /> {conditions.adults + conditions.juniorHighStudents + conditions.elementaryStudents}人</span><span><CarFront size={15} /> {conditions.transport}</span></div>
       </header>
 
       <div className={`app-grid ${mobileSheetOpen ? "sheet-open" : ""}`}>
