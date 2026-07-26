@@ -21,8 +21,8 @@ import { CustomLocation, ItineraryItem, ReturnSettings, RouteMode, SamplePlan, S
 
 const MapCanvas = dynamic(() => import("@/components/MapCanvas"), { ssr: false, loading: () => <div className="map-loading">地図を準備しています…</div> });
 
-type FilterKey = "美術館" | "自然" | "絶景" | "湖" | "神社" | "食事処" | "子ども向け" | "雨天対応" | "駐車場あり" | "滞在1時間以内" | "混雑が少ない" | "宿泊施設から近い" | "無料" | "飲食店あり" | "トイレあり";
-const primaryFilters: FilterKey[] = ["食事処", "混雑が少ない", "子ども向け", "雨天対応", "宿泊施設から近い", "滞在1時間以内"];
+type FilterKey = "観光地" | "美術館" | "自然" | "絶景" | "湖" | "神社" | "食事処" | "子ども向け" | "雨天対応" | "駐車場あり" | "滞在1時間以内" | "混雑が少ない" | "宿泊施設から近い" | "無料" | "飲食店あり" | "トイレあり";
+const primaryFilters: FilterKey[] = ["観光地", "食事処", "混雑が少ない", "子ども向け", "雨天対応", "宿泊施設から近い", "滞在1時間以内"];
 const advancedFilters: FilterKey[] = ["美術館", "自然", "絶景", "湖", "神社", "駐車場あり", "無料", "飲食店あり", "トイレあり"];
 const STORAGE_KEY = "hakone-yurutabi-planner:v1";
 
@@ -136,6 +136,7 @@ export default function Home() {
     const textMatch = spot.name.includes(query) || spot.category.includes(query) || spot.tags.some((tag) => tag.includes(query));
     const filterMatch = activeFilters.every((filter) => {
       if (["美術館", "自然", "絶景", "湖", "神社"].includes(filter)) return spot.category === filter;
+      if (filter === "観光地") return spot.category !== "飲食";
       if (filter === "食事処") return spot.category === "飲食";
       if (filter === "子ども向け") return spot.childFriendly >= 4;
       if (filter === "雨天対応") return spot.rainyDayFriendly;
@@ -173,10 +174,10 @@ export default function Home() {
   const currentTripState: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions };
 
   const toggleFilter = (filter: FilterKey) => {
-    if (filter === "食事処") {
-      // 食事処は他の条件や検索語が残ると0件になりやすいため、単独で表示する。
+    if (filter === "観光地" || filter === "食事処") {
+      // 大分類は他の条件や検索語をリセットし、観光地と食事処を分かりやすく切り替える。
       setQuery("");
-      setActiveFilters((current) => current.length === 1 && current[0] === "食事処" ? [] : ["食事処"]);
+      setActiveFilters((current) => current.length === 1 && current[0] === filter ? [] : [filter]);
       return;
     }
     setActiveFilters((current) => current.includes(filter) ? current.filter((item) => item !== filter) : [...current, filter]);
