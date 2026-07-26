@@ -20,12 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -37,8 +33,13 @@ jobs:
         run: npm run test:e2e
       - name: Build static site
         run: npm run build
+      # v6 は Node 24 対応。Pages が未初期化のリポジトリでも有効化する。
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./out
 
