@@ -1,5 +1,6 @@
 import { isKnownItemType, isTimeValue, normalizeItinerary } from "@/lib/itinerary";
 import { isValidCoordinates, normalizeCustomLocation } from "@/lib/location";
+import { normalizeTravelConditions } from "@/lib/conditions";
 import { ItineraryItem, RentalCarAction, ReturnSettings, SavedTripState, Spot, TransportAction, TransportMode, TripState } from "@/types";
 
 export type RestoreResult =
@@ -107,6 +108,7 @@ export function restoreTripState(raw: string | null, spots: Spot[], allowedFilte
         visitTime: data.visitTime,
         weather: data.weather,
         returnSettings: isReturnSettings(data.returnSettings) ? data.returnSettings : undefined,
+        conditions: normalizeTravelConditions(data.conditions),
       },
     },
   };

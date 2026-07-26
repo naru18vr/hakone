@@ -2,7 +2,7 @@ import { Spot } from "@/types";
 
 /**
  * 初期表示用の静的データです。営業時間・料金は変更されるため、表示時にも
- * 公式サイトを開けるようにしています。最終見直し: 2026-07-24。
+ * 公式サイトを開けるようにしています。最終見直し: 2026-07-26。
  */
 export const spots: Spot[] = [
   {
@@ -109,6 +109,41 @@ export const spots: Spot[] = [
     officialUrl: "https://www.hakonenavi.jp/spot/143", openingHours: "9:00〜17:00（季節により変動）", closedDays: "年中無休の場合あり・要確認", priceAdult: "公式サイトで要確認", priceJuniorHigh: "公式サイトで要確認", priceElementary: "公式サイトで要確認", stayMinutes: 60,
     parkingAvailable: true, parkingSpaces: "近隣駐車場を要確認", rainyDayFriendly: false, walkingLevel: 4, childFriendly: 4, juniorHighFriendly: 4,
     crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-24", crowdHint: "体験イベントの時間帯に増える", bestTime: "午前", tags: ["子ども向け", "トイレあり"], dataNote: "入園料・体験プログラムは公式サイトで確認してください。", photoKind: "placeholder"
+  },
+  {
+    id: "okada-museum", name: "岡田美術館", category: "美術館", latitude: 35.2439, longitude: 139.0509,
+    description: "小涌谷にある東洋美術中心の美術館。屋内で過ごしやすく、暑さや雨を避ける代替候補として組み込みやすい施設です。",
+    officialUrl: "https://www.okada-museum.com/guide/", openingHours: "9:00〜17:00（入館は16:30まで）", closedDays: "12月31日・1月1日・展示替期間", priceAdult: "2,800円", priceJuniorHigh: "1,800円", priceElementary: "1,800円", stayMinutes: 100,
+    parkingAvailable: true, parkingSpaces: "80台（公式案内）", rainyDayFriendly: true, walkingLevel: 2, childFriendly: 3, juniorHighFriendly: 4,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "11〜14時は入館・カフェ利用が重なりやすい", bestTime: "9時台または14時以降", tags: ["雨天対応", "駐車場あり", "飲食店あり", "トイレあり"], dataNote: "営業時間・料金・展示替期間は2026-07-26に公式案内を確認。来館前に再確認してください。", photoKind: "placeholder"
+  },
+  {
+    id: "hakone-checkpoint", name: "箱根関所・資料館", category: "エリア", latitude: 35.1902, longitude: 139.0252,
+    description: "芦ノ湖畔に復元された江戸時代の関所。歴史の話題を交えやすく、中学生と小学生の両方が楽しめる立ち寄り候補です。",
+    officialUrl: "https://www.hakonesekisyo.jp/", openingHours: "9:00〜17:00（12〜2月は16:30まで、最終入場は30分前）", closedDays: "年中無休", priceAdult: "500円", priceJuniorHigh: "公式サイトで要確認", priceElementary: "250円", stayMinutes: 60,
+    parkingAvailable: false, parkingSpaces: "近隣駐車場を要確認", rainyDayFriendly: false, walkingLevel: 3, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "元箱根・箱根町周辺は11〜15時に道路と駐車場が混みやすい", bestTime: "9時台", tags: ["湖", "子ども向け", "トイレあり"], dataNote: "営業時間・料金は2026-07-26に公式案内を確認。駐車場は近隣を含めて確認してください。", photoKind: "placeholder"
+  },
+  {
+    id: "hakone-en-aquarium", name: "箱根園水族館", category: "湖", latitude: 35.1977, longitude: 139.0226,
+    description: "芦ノ湖畔の屋内水族館。雨天・暑さの逃げ場になり、バイカルアザラシなどを見られる子ども向けの候補です。",
+    officialUrl: "https://www.princehotels.co.jp/amuse/hakone-en/suizokukan/", openingHours: "9:00〜16:30（最終入館は閉館30分前、季節により変更）", closedDays: "公式サイトで要確認", priceAdult: "1,600円", priceJuniorHigh: "1,600円", priceElementary: "800円", stayMinutes: 80,
+    parkingAvailable: true, parkingSpaces: "箱根園駐車場（公式案内を確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 5, juniorHighFriendly: 3,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "夏休みの昼前後は箱根園駐車場が混みやすい", bestTime: "開館直後", tags: ["湖", "子ども向け", "雨天対応", "駐車場あり", "トイレあり"], dataNote: "営業時間・料金は2026-07-26に公式案内を確認。季節変動があるため来館前に再確認してください。", photoKind: "placeholder"
+  },
+  {
+    id: "hakone-geo-museum", name: "箱根ジオミュージアム", category: "美術館", latitude: 35.2440, longitude: 139.0216,
+    description: "大涌谷くろたまご館1階で、箱根火山の成り立ちを短時間で学べる小規模施設。大涌谷の滞在に屋内要素を足せます。",
+    officialUrl: "https://www.hakone-geomuseum.jp/about/", openingHours: "9:00〜16:00", closedDays: "年中無休（天候等による変更あり）", priceAdult: "ジオホール100円（インフォメーションゾーン無料）", priceJuniorHigh: "100円", priceElementary: "100円", stayMinutes: 35,
+    parkingAvailable: true, parkingSpaces: "大涌谷周辺駐車場を利用・混雑時は待機の可能性", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "大涌谷の混雑と連動しやすい", bestTime: "9時台", tags: ["子ども向け", "雨天対応", "駐車場あり", "トイレあり"], dataNote: "営業時間・料金は2026-07-26に公式案内を確認。大涌谷の通行・火山情報は当日も確認してください。", photoKind: "placeholder"
+  },
+  {
+    id: "hakone-museum", name: "箱根美術館", category: "美術館", latitude: 35.2509, longitude: 139.0477,
+    description: "日本のやきものと苔庭を楽しめる強羅の美術館。静かな屋内鑑賞と庭園を組み合わせたいときの候補です。",
+    officialUrl: "https://moaart.or.jp/hakone/", openingHours: "4〜11月 9:30〜16:30（最終入館16:00）", closedDays: "木曜（祝休日・11月中は開館）・年末年始・展示替え日", priceAdult: "公式サイトで要確認", priceJuniorHigh: "公式サイトで要確認", priceElementary: "公式サイトで要確認", stayMinutes: 75,
+    parkingAvailable: true, parkingSpaces: "無料100台（観光協会案内）", rainyDayFriendly: true, walkingLevel: 3, childFriendly: 2, juniorHighFriendly: 4,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "午前の入館と庭園散策に来館が集まりやすい", bestTime: "14時以降", tags: ["雨天対応", "駐車場あり", "トイレあり"], dataNote: "営業時間・休館日を2026-07-26に公式案内で確認。企画・庭園状況は来館前に再確認してください。", photoKind: "placeholder"
   }
 ];
 

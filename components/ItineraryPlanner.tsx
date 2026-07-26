@@ -19,6 +19,7 @@ type Props = {
   activeDay: 1 | 2;
   routeDay: RouteDay;
   routeMode: RouteMode;
+  dayStartTime: string;
   locationPickMode: boolean;
   onStartLocationPick: (commit: (location: CustomLocation) => void) => void;
   onCancelLocationPick: () => void;
@@ -32,11 +33,11 @@ const itemIcon: Record<ItemType, string> = { start: "出", goal: "着", spot: "�
 const itemLabel: Record<ItemType, string> = { start: "出発", goal: "到着", spot: "観光地", meal: "食事", hotel: "宿泊", break: "休憩", rental_car: "レンタカー", transport: "交通", free: "自由予定", travel_note: "移動メモ" };
 const dateLabel = (day: 1 | 2) => day === 1 ? "8月12日" : "8月13日";
 
-export default function ItineraryPlanner({ itinerary, spots, selectedSpot, activeDay, routeDay, routeMode, locationPickMode, onStartLocationPick, onCancelLocationPick, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
+export default function ItineraryPlanner({ itinerary, spots, selectedSpot, activeDay, routeDay, routeMode, dayStartTime, locationPickMode, onStartLocationPick, onCancelLocationPick, onActiveDayChange, onRouteDayChange, onChange, onClear }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const activeItems = itinerary.filter((item) => item.day === activeDay).sort((a, b) => a.order - b.order);
-  const startTime = activeDay === 1 ? "11:15" : "09:00";
+  const startTime = dayStartTime;
   const summary = calcDaySummary(activeItems, spots, startTime);
   const entries = buildDaySchedule(activeItems, spots, startTime).entries;
   const routePresentation = getRoutePresentation(routeMode);

@@ -1,6 +1,7 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from "lz-string";
 import { normalizeItinerary } from "@/lib/itinerary";
 import { isValidCoordinates, normalizeCustomLocation } from "@/lib/location";
+import { normalizeTravelConditions, partyLabel } from "@/lib/conditions";
 import { ItineraryItem, SharedTripPayload, Spot, TripState } from "@/types";
 
 const SHARE_VERSION = 1;
@@ -46,8 +47,9 @@ export const createSharedPayload = (state: TripState, includeNotes = false): Sha
     visitTime: state.visitTime,
     weather: state.weather,
     returnSettings: state.returnSettings,
-    travelDates: "2026-08-12/2026-08-13",
-    party: "大人2・中学生1・小学生1",
+    conditions: state.conditions,
+    travelDates: state.conditions ? `${state.conditions.startDate}/${state.conditions.endDate}` : "2026-08-12/2026-08-13",
+    party: state.conditions ? partyLabel(state.conditions) : "大人2・中学生1・小学生1",
   },
 });
 
@@ -72,7 +74,7 @@ const restoreItem = (value: unknown, spotIds: Set<string>): ItineraryItem | null
   return { id: value.id, day: value.day, type: value.type as ItineraryItem["type"], spotId: typeof value.spotId === "string" ? value.spotId : undefined, title: value.title, stayMinutes: value.stayMinutes, order: value.order, startTime: typeof value.startTime === "string" ? value.startTime : undefined, endTime: typeof value.endTime === "string" ? value.endTime : undefined, latitude: location?.latitude ?? (typeof value.latitude === "number" ? value.latitude : undefined), longitude: location?.longitude ?? (typeof value.longitude === "number" ? value.longitude : undefined), locationName: typeof value.locationName === "string" ? value.locationName : location?.name, address: typeof value.address === "string" ? value.address : undefined, isReserved: typeof value.isReserved === "boolean" ? value.isReserved : undefined, createdAt: typeof value.createdAt === "string" ? value.createdAt : undefined, updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : undefined, note: typeof value.note === "string" ? value.note : undefined, isCustom: typeof value.isCustom === "boolean" ? value.isCustom : undefined, subtype: typeof value.subtype === "string" ? value.subtype as ItineraryItem["subtype"] : undefined, transportMode: typeof value.transportMode === "string" ? value.transportMode as ItineraryItem["transportMode"] : undefined, transportAction: typeof value.transportAction === "string" ? value.transportAction as ItineraryItem["transportAction"] : undefined, departureTime: isTime(value.departureTime) ? value.departureTime : undefined, arrivalTime: isTime(value.arrivalTime) ? value.arrivalTime : undefined, destinationName: typeof value.destinationName === "string" ? value.destinationName : undefined, useForReturnTrip: typeof value.useForReturnTrip === "boolean" ? value.useForReturnTrip : undefined, location };
 };
 
-export type SharedDecodeResult = { ok: true; payload: SharedTripPayload; state: Pick<TripState, "itinerary" | "hotelName" | "activeFilters" | "crowdMode" | "visitTime" | "weather" | "returnSettings"> } | { ok: false; message: string };
+export type SharedDecodeResult = { ok: true; payload: SharedTripPayload; state: Pick<TripState, "itinerary" | "hotelName" | "activeFilters" | "crowdMode" | "visitTime" | "weather" | "returnSettings" | "conditions"> } | { ok: false; message: string };
 
 export const decodeSharedPayload = (encoded: string | null, spots: Spot[]): SharedDecodeResult => {
   if (!encoded) return { ok: false, message: "共有データが見つかりません。" };
@@ -86,7 +88,7 @@ export const decodeSharedPayload = (encoded: string | null, spots: Spot[]): Shar
     const items = trip.itinerary.map((item) => restoreItem(item, new Set(spots.map((spot) => spot.id))));
     if (items.some((item) => !item)) return { ok: false, message: "存在しない観光地または不正な予定が含まれています。" };
     const itinerary = normalizeItinerary(items as ItineraryItem[]);
-    const state = { itinerary, hotelName: trip.hotelName, activeFilters: trip.activeFilters.filter((item): item is string => typeof item === "string"), crowdMode: trip.crowdMode as TripState["crowdMode"], visitTime: trip.visitTime, weather: trip.weather as TripState["weather"], returnSettings: isRecord(trip.returnSettings) ? trip.returnSettings as TripState["returnSettings"] : undefined };
+    const state = { itinerary, hotelName: trip.hotelName, activeFilters: trip.activeFilters.filter((item): item is string => typeof item === "string"), crowdMode: trip.crowdMode as TripState["crowdMode"], visitTime: trip.visitTime, weather: trip.weather as TripState["weather"], returnSettings: isRecord(trip.returnSettings) ? trip.returnSettings as TripState["returnSettings"] : undefined, conditions: normalizeTravelConditions(trip.conditions) };
     return { ok: true, payload: value as SharedTripPayload, state };
   } catch {
     return { ok: false, message: "共有旅程を読み込めませんでした。URLが破損している可能性があります。" };

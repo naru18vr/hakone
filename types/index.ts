@@ -117,6 +117,20 @@ export type ReturnSettings = {
   delayBufferMinutes: number;
 };
 
+/** 旅行者が画面から変更できる、時刻計算にも使う基本条件。 */
+export type TravelConditions = {
+  startDate: string;
+  endDate: string;
+  day1StartTime: string;
+  day2StartTime: string;
+  arrivalPlace: string;
+  adults: number;
+  juniorHighStudents: number;
+  elementaryStudents: number;
+  transport: "レンタカー" | "公共交通" | "その他";
+  planPolicy: string;
+};
+
 export type TripState = {
   itinerary: ItineraryItem[];
   hotelName: string;
@@ -128,14 +142,16 @@ export type TripState = {
   visitTime: string;
   weather: "晴れ" | "雨" | "くもり";
   returnSettings?: ReturnSettings;
+  /** 旧保存・共有データとの互換性のため任意。未指定時は初期条件を利用する。 */
+  conditions?: TravelConditions;
 };
 
 export type SharedTripPayload = {
   version: 1;
   createdAt: string;
-  trip: Pick<TripState, "itinerary" | "hotelName" | "activeFilters" | "crowdMode" | "visitTime" | "weather" | "returnSettings"> & {
-    travelDates: "2026-08-12/2026-08-13";
-    party: "大人2・中学生1・小学生1";
+  trip: Pick<TripState, "itinerary" | "hotelName" | "activeFilters" | "crowdMode" | "visitTime" | "weather" | "returnSettings" | "conditions"> & {
+    travelDates: string;
+    party: string;
   };
 };
 

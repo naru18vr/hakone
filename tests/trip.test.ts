@@ -12,6 +12,7 @@ import { createShareUrl, createSharedPayload, decodeSharedPayload, shareUrlLengt
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { assessStress, buildDayRouteLegs, buildDaySchedule, calcDaySummary, calcTripSummary, estimateLeg, getStressLabel } from "@/lib/trip";
 import { ItineraryItem, TripState } from "@/types";
+import { defaultTravelConditions } from "@/lib/conditions";
 
 const clonePlan = () => initialPlan.itinerary.map((item) => ({ ...item }));
 const byId = (id: string) => {
@@ -181,6 +182,13 @@ describe("負荷スコア", () => {
 });
 
 describe("保存データ", () => {
+  it("旅行条件を保存・復元し、旧保存データには初期条件を適用できる", () => {
+    const state = defaultState();
+    state.conditions = { ...defaultTravelConditions, day1StartTime: "10:40", adults: 3, planPolicy: "美術館を優先" };
+    const restored = restoreTripState(JSON.stringify(serializeTripState(state)), spots, []);
+    expect(restored.status).toBe("restored");
+    if (restored.status === "restored") expect(restored.saved.data.conditions).toMatchObject({ day1StartTime: "10:40", adults: 3, planPolicy: "美術館を優先" });
+  });
   it("バージョン付きデータを復元し、並び順を正規化する", () => {
     const state = defaultState();
     state.itinerary = state.itinerary.map((item, index) => ({ ...item, order: 99 - index }));
@@ -232,6 +240,15 @@ describe("保存データ", () => {
 });
 
 describe("経路の表示と全体集計", () => {
+  it("編集した出発時刻を日別・全体の時刻計算へ反映する", () => {
+    const itinerary = clonePlan();
+    const day1 = itinerary.filter((item) => item.day === 1);
+    const day2 = itinerary.filter((item) => item.day === 2);
+    const defaultSummary = calcTripSummary(day1, day2, spots);
+    const editedSummary = calcTripSummary(day1, day2, spots, { day1: "10:15", day2: "08:30" });
+    expect(editedSummary.day1.endMinutes).toBe(defaultSummary.day1.endMinutes - 60);
+    expect(editedSummary.day2.endMinutes).toBe(defaultSummary.day2.endMinutes - 30);
+  });
   it("道路経路の失敗時は簡易推計と明示する", () => {
     expect(getRoutePresentation("fallback")).toMatchObject({ status: "estimate", label: "簡易推計" });
   });
@@ -316,6 +333,14 @@ describe("帰京と混雑の比較情報", () => {
 });
 
 describe("共有URL", () => {
+  it("編集した旅行条件を共有URLで復元する", () => {
+    const state = defaultState();
+    state.conditions = { ...defaultTravelConditions, day2StartTime: "08:20", transport: "公共交通", adults: 1 };
+    const url = createShareUrl("https://example.test", "/", state);
+    const decoded = decodeSharedPayload(new URL(url).searchParams.get("plan"), spots);
+    expect(decoded.ok).toBe(true);
+    if (decoded.ok) expect(decoded.state.conditions).toMatchObject({ day2StartTime: "08:20", transport: "公共交通", adults: 1 });
+  });
   it("共有用データは既定でメモを除外して往復できる", () => {
     const state = defaultState();
     state.itinerary[0].note = "予約番号などの個人メモ";

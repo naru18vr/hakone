@@ -9,9 +9,9 @@ export type ReturnCase = { label: "通常" | "混雑" | "混雑悪化"; stationA
 
 export const returnVerdict = (margin: number) => margin >= 60 ? "余裕あり" : margin >= 30 ? "おおむね問題なし" : margin >= 15 ? "余裕少なめ" : margin >= 0 ? "かなり危険" : "間に合わない可能性";
 
-export const calculateReturnTrip = (day2: ItineraryItem[], spots: Spot[], settings: ReturnSettings = defaultReturnSettings) => {
-  const summary = calcDaySummary(day2, spots, "09:00");
-  const stationArrival = 9 * 60 + summary.totalMinutes;
+export const calculateReturnTrip = (day2: ItineraryItem[], spots: Spot[], settings: ReturnSettings = defaultReturnSettings, day2StartTime = "09:00") => {
+  const summary = calcDaySummary(day2, spots, day2StartTime);
+  const stationArrival = timeToMinutes(day2StartTime) + summary.totalMinutes;
   const rawDinner = timeToMinutes(settings.dinnerTime);
   // 深夜帯の夕食指定では、翌日の時刻として扱い、日付またぎでも余裕計算を壊さない。
   const dinner = rawDinner < 6 * 60 ? rawDinner + 1440 : rawDinner;

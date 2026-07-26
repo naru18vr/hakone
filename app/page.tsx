@@ -15,8 +15,9 @@ import { calculateReturnTrip, defaultReturnSettings } from "@/lib/return-trip";
 import { crowdDetails, crowdText } from "@/lib/crowd";
 import { decodeSharedPayload, SharedDecodeResult } from "@/lib/share";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
+import { defaultTravelConditions, partyLabel } from "@/lib/conditions";
 import { airDistanceKm, assessStress, calcTripSummary, formatEndTime, getStressDescription, minutesToText } from "@/lib/trip";
-import { CustomLocation, ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TripState } from "@/types";
+import { CustomLocation, ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TravelConditions, TripState } from "@/types";
 
 const MapCanvas = dynamic(() => import("@/components/MapCanvas"), { ssr: false, loading: () => <div className="map-loading">地図を準備しています…</div> });
 
@@ -46,6 +47,7 @@ export default function Home() {
   const [distanceReference, setDistanceReference] = useState<"hotel" | "odawara" | "last" | "selected">("hotel");
   const [spotSort, setSpotSort] = useState<"near" | "drive" | "add" | "crowd" | "child" | "rain" | "stay" | "price">("near");
   const [returnSettings, setReturnSettings] = useState<ReturnSettings>(defaultReturnSettings);
+  const [conditions, setConditions] = useState<TravelConditions>(defaultTravelConditions);
   const [shareOpen, setShareOpen] = useState(false);
   const [pendingShare, setPendingShare] = useState<Extract<SharedDecodeResult, { ok: true }> | undefined>();
   const [shareError, setShareError] = useState("");
@@ -69,6 +71,7 @@ export default function Home() {
           setVisitTime(data.visitTime);
           setWeather(data.weather);
           setReturnSettings(data.returnSettings ?? defaultReturnSettings);
+          setConditions(data.conditions ?? defaultTravelConditions);
           setSelectedSpot(baseSpots.find((spot) => spot.id === data.selectedSpotId));
           setToast("保存した旅程を復元しました");
         } else if (restored.status === "invalid" || restored.status === "unsupported") {
@@ -95,12 +98,12 @@ export default function Home() {
   useEffect(() => {
     if (!storageReady || viewingShared) return;
     try {
-      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
+      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeTripState(data)));
     } catch {
       // プライベートブラウズ等で保存できない場合も、画面上の計画は利用できる。
     }
-  }, [storageReady, viewingShared, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings]);
+  }, [storageReady, viewingShared, itinerary, hotelName, selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions]);
 
   useEffect(() => {
     if (!toast) return;
@@ -156,7 +159,7 @@ export default function Home() {
 
   const day1 = itinerary.filter((item) => item.day === 1).sort((a, b) => a.order - b.order);
   const day2 = itinerary.filter((item) => item.day === 2).sort((a, b) => a.order - b.order);
-  const tripSummary = calcTripSummary(day1, day2, spots);
+  const tripSummary = calcTripSummary(day1, day2, spots, { day1: conditions.day1StartTime, day2: conditions.day2StartTime });
   const summary1 = tripSummary.day1;
   const summary2 = tripSummary.day2;
   const stress = assessStress(day1, day2, spots);
@@ -165,8 +168,8 @@ export default function Home() {
   const totalDrive = tripSummary.predictedDriveMinutes;
   const totalStay = tripSummary.stayMinutes;
   const isRecalculating = routeModes[1] === "loading" || routeModes[2] === "loading";
-  const returnTrip = calculateReturnTrip(day2, spots, returnSettings);
-  const currentTripState: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
+  const returnTrip = calculateReturnTrip(day2, spots, returnSettings, conditions.day2StartTime);
+  const currentTripState: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions };
 
   const toggleFilter = (filter: FilterKey) => setActiveFilters((current) => current.includes(filter) ? current.filter((item) => item !== filter) : [...current, filter]);
   const updateItinerary = (next: ItineraryItem[]) => {
@@ -227,7 +230,7 @@ export default function Home() {
   };
   const saveTrip = () => {
     try {
-      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings };
+      const data: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeTripState(data)));
       setToast("この端末に旅程を保存しました");
     } catch {
@@ -244,6 +247,7 @@ export default function Home() {
     setVisitTime(shared.visitTime);
     setWeather(shared.weather);
     setReturnSettings(shared.returnSettings ?? defaultReturnSettings);
+    setConditions(shared.conditions ?? defaultTravelConditions);
     setActiveDay(1); setRouteDay("all"); setRouteModes({ 1: "loading", 2: "loading" });
     setViewingShared(!saveToDevice);
     setPendingShare(undefined);
@@ -258,7 +262,7 @@ export default function Home() {
     <main>
       <header className="site-header">
         <div className="brand"><span className="brand-mark">箱</span><div><h1>箱根ゆる旅プランナー</h1><p>地図を見ながら、無理のない家族旅行を組み立てる</p></div></div>
-        <div className="header-badges"><span><CalendarDays size={15} /> 2026.08.12–13</span><span><Users size={15} /> 4人家族</span><span><CarFront size={15} /> レンタカー</span></div>
+        <div className="header-badges"><span><CalendarDays size={15} /> {conditions.startDate}–{conditions.endDate.slice(5)}</span><span><Users size={15} /> {conditions.adults + conditions.juniorHighStudents + conditions.elementaryStudents}人</span><span><CarFront size={15} /> {conditions.transport}</span></div>
       </header>
 
       <div className={`app-grid ${mobileSheetOpen ? "sheet-open" : ""}`}>
@@ -266,8 +270,24 @@ export default function Home() {
           <button className="mobile-sheet-handle" onClick={() => setMobileSheetOpen((value) => !value)} aria-expanded={mobileSheetOpen}><span /><span>{mobileSheetOpen ? "計画パネルを閉じる" : "旅程・観光地を開く"}</span>{mobileSheetOpen ? <X size={16} /> : <Menu size={16} />}</button>
           <section className="card trip-card" id="trip-panel">
             <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>保存</button><button className="text-button" onClick={() => setShareOpen(true)}><Share2 size={14} /> 共有</button><button className="text-button" onClick={() => window.print()}><Printer size={14} /> 印刷</button><button className="text-button" onClick={() => { setToast("印刷画面で、プリンターとして「PDFに保存」を選択してください。"); window.print(); }}>PDF用画面</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div></div>
-            <div className="trip-facts"><span><MapPinned size={15} /> 小田原駅・昼前到着</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> 13日夕方に小田原へ</span></div>
+            <div className="trip-facts"><span><MapPinned size={15} /> {conditions.arrivalPlace}・{conditions.day1StartTime}出発</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> {conditions.planPolicy}</span></div>
             <label className="field-label">宿泊施設（仮地点）<input value={hotelName} onChange={(event) => setHotelName(event.target.value)} /></label>
+            <details className="travel-condition-editor" open>
+              <summary>日程・出発時刻・旅行条件を編集</summary>
+              <div className="scenario-grid">
+                <label>開始日<input type="date" value={conditions.startDate} onChange={(event) => setConditions((value) => ({ ...value, startDate: event.target.value }))} /></label>
+                <label>終了日<input type="date" value={conditions.endDate} min={conditions.startDate} onChange={(event) => setConditions((value) => ({ ...value, endDate: event.target.value }))} /></label>
+                <label>8/12 出発<input type="time" value={conditions.day1StartTime} onChange={(event) => setConditions((value) => ({ ...value, day1StartTime: event.target.value }))} /></label>
+                <label>8/13 出発<input type="time" value={conditions.day2StartTime} onChange={(event) => setConditions((value) => ({ ...value, day2StartTime: event.target.value }))} /></label>
+                <label>出発・到着地点<input value={conditions.arrivalPlace} onChange={(event) => setConditions((value) => ({ ...value, arrivalPlace: event.target.value }))} /></label>
+                <label>移動手段<select value={conditions.transport} onChange={(event) => setConditions((value) => ({ ...value, transport: event.target.value as TravelConditions["transport"] }))}><option>レンタカー</option><option>公共交通</option><option>その他</option></select></label>
+                <label>大人<input type="number" min={0} max={20} value={conditions.adults} onChange={(event) => setConditions((value) => ({ ...value, adults: Math.max(0, Number(event.target.value) || 0) }))} /></label>
+                <label>中学生<input type="number" min={0} max={20} value={conditions.juniorHighStudents} onChange={(event) => setConditions((value) => ({ ...value, juniorHighStudents: Math.max(0, Number(event.target.value) || 0) }))} /></label>
+                <label>小学生<input type="number" min={0} max={20} value={conditions.elementaryStudents} onChange={(event) => setConditions((value) => ({ ...value, elementaryStudents: Math.max(0, Number(event.target.value) || 0) }))} /></label>
+                <label>計画方針<input value={conditions.planPolicy} onChange={(event) => setConditions((value) => ({ ...value, planPolicy: event.target.value }))} /></label>
+              </div>
+              <small>{conditions.startDate}〜{conditions.endDate}・{partyLabel(conditions)}。出発時刻を変更すると、旅程の到着・出発時刻と帰京予測を再計算します。</small>
+            </details>
             <div className="scenario-grid"><label>訪問時刻<select value={visitTime} onChange={(event) => setVisitTime(event.target.value)}><option>09:00</option><option>11:30</option><option>14:30</option><option>16:00</option></select></label><label>天候<select value={weather} onChange={(event) => setWeather(event.target.value as "晴れ" | "雨" | "くもり")}><option>晴れ</option><option>くもり</option><option>雨</option></select></label></div>
             <div className="mode-switch"><span>混雑データ</span><button className={crowdMode === "forecast" ? "active" : ""} onClick={() => setCrowdMode("forecast")}>予測</button><button className={crowdMode === "general" ? "active" : ""} onClick={() => setCrowdMode("general")}>一般傾向</button></div>
             <p className="source-note"><CircleAlert size={14} /> {crowdMode === "forecast" ? "お盆・時間帯・天候を用いた予測です。リアルタイム情報ではありません。" : "一般的な混雑傾向です。リアルタイム情報ではありません。"}</p>
@@ -287,7 +307,7 @@ export default function Home() {
 
           <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onOpenAdd={setAddDialogSpot} onClose={() => setSelectedSpot(undefined)} />
 
-          <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} selectedSpot={selectedSpot} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} locationPickMode={locationPickMode} onStartLocationPick={beginLocationPick} onCancelLocationPick={cancelLocationPick} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={updateItinerary} onClear={clearItinerary} /></div>
+          <div className="itinerary-panel" id="itinerary-panel"><ItineraryPlanner itinerary={itinerary} spots={spots} selectedSpot={selectedSpot} activeDay={activeDay} routeDay={routeDay} routeMode={routeModes[activeDay]} dayStartTime={activeDay === 1 ? conditions.day1StartTime : conditions.day2StartTime} locationPickMode={locationPickMode} onStartLocationPick={beginLocationPick} onCancelLocationPick={cancelLocationPick} onActiveDayChange={setActiveDay} onRouteDayChange={setRouteDay} onChange={updateItinerary} onClear={clearItinerary} /></div>
 
           <section className={`card stress-card ${stress.label}`}>
             <div className="section-heading"><div><span className="eyebrow">旅程の負荷</span><h2>{stress.label}</h2></div><span className="stress-score">{loadScore} / 100</span></div>
@@ -303,7 +323,7 @@ export default function Home() {
             <div className="overview-heading">日ごと・旅行全体の合計</div>
             <SummaryBlock title="8月12日" summary={summary1} isRecalculating={routeModes[1] === "loading"} />
             <SummaryBlock title="8月13日" summary={summary2} isRecalculating={routeModes[2] === "loading"} />
-            <div className={`whole-trip ${isRecalculating ? "is-recalculating" : ""}`}><span>旅行全体</span>{isRecalculating ? <strong>再計算中…</strong> : <><strong>{totalDistance.toFixed(1)} km · 運転 {minutesToText(totalDrive)} · 滞在 {minutesToText(totalStay)}</strong><small>13日の小田原駅到着目安 {formatEndTime("09:00", summary2.totalMinutes)}</small></>}</div>
+            <div className={`whole-trip ${isRecalculating ? "is-recalculating" : ""}`}><span>旅行全体</span>{isRecalculating ? <strong>再計算中…</strong> : <><strong>{totalDistance.toFixed(1)} km · 運転 {minutesToText(totalDrive)} · 滞在 {minutesToText(totalStay)}</strong><small>2日目の小田原駅到着目安 {formatEndTime(conditions.day2StartTime, summary2.totalMinutes)}</small></>}</div>
             <p className="route-source-note">地図経路：1日目 {routeModeLabel(routeModes[1])} ／ 2日目 {routeModeLabel(routeModes[2])}</p>
           </section>
 

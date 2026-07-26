@@ -80,9 +80,9 @@ export const calcDaySummary = (items: ItineraryItem[], spots: Spot[], startTime 
   return { legs, distanceKm, baseDriveMinutes, predictedDriveMinutes, stayMinutes, waitMinutes: schedule.waitMinutes, endMinutes: schedule.endMinutes, totalMinutes: predictedDriveMinutes + stayMinutes + schedule.waitMinutes };
 };
 
-export const calcTripSummary = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[]) => {
-  const firstDay = calcDaySummary(day1, spots, "11:15");
-  const secondDay = calcDaySummary(day2, spots, "09:00");
+export const calcTripSummary = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[], startTimes: { day1: string; day2: string } = { day1: "11:15", day2: "09:00" }) => {
+  const firstDay = calcDaySummary(day1, spots, startTimes.day1);
+  const secondDay = calcDaySummary(day2, spots, startTimes.day2);
   return {
     day1: firstDay,
     day2: secondDay,

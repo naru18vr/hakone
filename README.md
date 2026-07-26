@@ -81,10 +81,16 @@
 | 0〜25 | かなりゆったり |
 | 26〜45 | ゆったり |
 | 46〜65 | 標準 |
-| 61〜80 | やや忙しい |
+| 66〜80 | やや忙しい |
 | 81〜100 | 詰め込みすぎ |
 
 たとえば66点は **やや忙しい** と表示されます。
+
+### 2026-07-26 旅行条件編集・スポット拡充
+
+- 旅行条件カードから、旅行日、8月12日・13日の出発時刻、出発／到着地点、人数構成、移動手段、旅行方針、宿泊施設名を編集可能にしました。
+- 出発時刻は日ごとの到着・出発予定、日別・全体集計、東京帰着予測へ即時反映します。編集内容はLocalStorageと共有URLへ保存され、古い保存データ・共有URLは初期条件を補って復元します。
+- 公式案内を確認し、岡田美術館、箱根関所・資料館、箱根園水族館、箱根ジオミュージアム、箱根美術館を追加しました。営業時間・料金は更新されるため、各カードの公式リンクで出発前に最終確認してください。
 
 ## LocalStorageの保存形式
 
@@ -189,6 +195,19 @@ type ItineraryItem = {
   order: number;
   latitude?: number;
   longitude?: number;
+};
+
+type TravelConditions = {
+  startDate: string;
+  endDate: string;
+  day1StartTime: string;
+  day2StartTime: string;
+  arrivalPlace: string;
+  adults: number;
+  juniorHighStudents: number;
+  elementaryStudents: number;
+  transport: "レンタカー" | "公共交通" | "その他";
+  planPolicy: string;
 };
 ```
 
