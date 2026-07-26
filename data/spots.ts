@@ -172,6 +172,48 @@ export const spots: Spot[] = [
     officialUrl: "https://www.princehotels.co.jp/hakone-sengokuhara/restaurant/grill/", openingHours: "営業日・ランチ時間は公式サイトで要確認", closedDays: "公式サイトで要確認", priceAdult: "ランチ目安 1,500〜2,500円", stayMinutes: 70,
     parkingAvailable: true, parkingSpaces: "ホテル駐車場あり（レストラン利用条件を要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 3,
     crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "休日の12時台は予約・宿泊利用と重なりやすい", bestTime: "11時台または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い"], dataNote: "営業日・料金・駐車条件は2026-07-26に公式情報を確認。口コミ評価は変動するため予約サイトで再確認してください。", photoKind: "placeholder", reviewScore: "食べログ参考 3.29/5（2026-07-26確認）"
+  },
+  {
+    id: "warabe-saigyodo", name: "わらべ菜魚洞", category: "飲食", latitude: 35.240786, longitude: 139.148738,
+    description: "早川漁港に近い海鮮料理店。小田原駅から車で寄りやすく、魚料理を旅の最初か最後に入れたい家族向けの候補です。",
+    officialUrl: "https://www.warabe.jp/", openingHours: "11:30〜14:00 L.O.／17:00〜20:30 L.O.（要確認）", closedDays: "水曜夜・公式サイトで要確認", priceAdult: "ランチ目安 1,500〜3,000円", stayMinutes: 65,
+    parkingAvailable: true, parkingSpaces: "専用駐車場20台（店舗案内を確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "昼どき・週末は港周辺と店内が混みやすい", bestTime: "開店直後または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け"], dataNote: "営業時間・駐車場・価格は2026-07-26に公式／店舗案内を確認。来店前に公式サイトで再確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "gin-no-ho", name: "ごはんと板前料理 銀の穂", category: "飲食", latitude: 35.260239, longitude: 139.002686,
+    description: "仙石原の釜めし・わっぱ飯の店。湿生花園、ラリック美術館、宿付近を組み合わせる日の昼食候補として便利です。",
+    officialUrl: "https://www.hakone-susuki.jp/ginnoho", openingHours: "11:00〜14:30／17:00〜20:30（要確認）", closedDays: "水曜・第1・第3火曜（要確認）", priceAdult: "目安 1,000〜3,000円", stayMinutes: 65,
+    parkingAvailable: true, parkingSpaces: "無料駐車場20台（店舗案内を確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "12時前後は釜めしの提供時間を含めて混みやすい", bestTime: "11時台前半または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い", "子ども向け"], dataNote: "営業時間・休業日・駐車場は2026-07-26に公式／観光案内を確認。釜めしの提供時間を見込んでください。", photoKind: "placeholder", reviewScore: "食べログ参考 3.26/5（掲載情報は変動）"
+  },
+  {
+    id: "sengokuhara-chaya", name: "仙石原茶屋", category: "飲食", latitude: 35.2745, longitude: 138.9973,
+    description: "仙石原すすき草原近くの古民家カフェ。短い休憩や軽食を入れたいときに向き、仙石原エリア内で大きく移動せずに済みます。",
+    officialUrl: "https://www.sengokubarachaya-hakone.com/", openingHours: "11:00〜17:30 L.O.17:00（営業カレンダーを要確認）", closedDays: "不定休（公式SNS・カレンダーで要確認）", priceAdult: "目安 1,000〜2,000円", stayMinutes: 45,
+    parkingAvailable: true, parkingSpaces: "近隣有料駐車場を利用（空き・条件は要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 3,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "午後のカフェ時間帯は席が埋まりやすい", bestTime: "11時台または15時以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い"], dataNote: "営業日と近隣駐車場は2026-07-26に公式案内を確認。専用駐車場の有無・利用条件は当日も確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "akatsukian-akatsukitei", name: "箱根暁庵本店 暁亭", category: "飲食", latitude: 35.226808, longitude: 139.092854,
+    description: "箱根湯本・湯本茶屋のそば処。箱根へ上がる前後に入れやすく、国登録有形文化財の建物で落ち着いて食事をしたいときの候補です。",
+    officialUrl: "https://akatsukian.jp/shop-akatsukitei/", openingHours: "11:00〜20:00 L.O.19:30（要確認）", closedDays: "水曜（要確認）", priceAdult: "ランチ目安 2,000〜3,000円", stayMinutes: 65,
+    parkingAvailable: true, parkingSpaces: "店舗隣接・第2駐車場あり（台数・空きは公式で要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 3, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "昼どき・箱根湯本を通過する時間帯は待ちが出やすい", bestTime: "11時台または14時以降", tags: ["飲食店あり", "駐車場あり", "雨天対応"], dataNote: "営業時間・駐車場・予約可否は2026-07-26に公式／観光案内を確認。旅行直前に公式サイトで再確認してください。", photoKind: "placeholder", reviewScore: "食べログなどの外部評価はリンク先で確認"
+  },
+  {
+    id: "gora-brewery-public-house", name: "GORA BREWERY PUBLIC HOUSE", category: "飲食", latitude: 35.2339, longitude: 139.1017,
+    description: "箱根湯本のクラフトビールと窯焼きピザのレストラン。箱根湯本で洋食を選びたいときの候補で、家族でシェアしやすいメニュー構成です。",
+    officialUrl: "https://itoh-dining.co.jp/publichouse/", openingHours: "11:30〜21:00（15:00〜16:30はドリンク中心・要確認）", closedDays: "公式サイトで要確認", priceAdult: "ランチ目安 2,000〜3,000円", stayMinutes: 70,
+    parkingAvailable: true, parkingSpaces: "近隣提携・有料駐車場（割引条件は店舗へ要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 3, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "箱根湯本の昼食・夕食時間帯は混みやすい", bestTime: "11時半の開店直後または16時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け"], dataNote: "営業時間・提携駐車場の利用条件は2026-07-26に公式／店舗案内を確認。運転者の飲酒はできません。", photoKind: "placeholder", reviewScore: "食べログ参考 3.42/5（掲載情報は変動）"
+  },
+  {
+    id: "tamura-ginkatsutei", name: "田むら銀かつ亭 本店", category: "飲食", latitude: 35.250583, longitude: 139.04928,
+    description: "強羅駅近くの豆腐かつ煮で知られる食事処。強羅公園・彫刻の森美術館を組み合わせる日の定食候補として追加しています。",
+    officialUrl: "https://ginkatsutei.jp/ginkatsutei-menu/", openingHours: "月・木〜日11:00〜14:30／17:00〜19:00、火11:00〜14:30（要確認）", closedDays: "水曜・火曜夜（要確認）", priceAdult: "ランチ目安 1,000〜2,000円", stayMinutes: 65,
+    parkingAvailable: true, parkingSpaces: "店舗駐車場あり（台数・混雑時の案内は公式で要確認）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 4, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "有名店のため、休日・昼どきは待ち時間が出やすい", bestTime: "開店直後または14時前", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け"], dataNote: "営業時間・休業日・駐車場は2026-07-26に公式／観光案内を確認。夏休みは待ち時間を見込んでください。", photoKind: "placeholder", reviewScore: "食べログ参考 3.49/5（掲載情報は変動）"
   }
 ];
 
