@@ -12,7 +12,10 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   await expect(pola).toHaveCount(1);
   await pola.click();
   const selectedSpotButton = page.getByRole("button", { name: /選択中：ポーラ美術館/ });
-  if (await selectedSpotButton.isVisible()) await selectedSpotButton.click();
+  if (await sheetHandle.isVisible()) {
+    await expect(selectedSpotButton).toBeVisible();
+    await selectedSpotButton.click();
+  }
   const add = page.getByRole("button", { name: "旅程へ追加" });
   await expect(add).toHaveCount(1);
   await add.click();
@@ -86,6 +89,8 @@ test("地図上の仮地点を確定し、追加フォームへ戻る", async ({
 test("地点選択のキャンセル後も入力内容を保持する", async ({ page }) => {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/");
+  const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
+  if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
   await page.getByRole("button", { name: "予定を追加" }).click();
   const dialog = page.getByRole("dialog", { name: "旅行の予定を追加" });
   await dialog.getByLabel("タイトル（必須）").fill("入力を保持する休憩");
