@@ -8,10 +8,10 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
 
   await page.locator(".return-settings summary").click();
   await page.getByLabel("夕食予定").fill("18:30");
-  const wetland = page.getByRole("button", { name: /箱根湿生花園/ });
-  await expect(wetland).toHaveCount(1);
-  await wetland.click();
-  const selectedSpotButton = page.getByRole("button", { name: /選択中：箱根湿生花園/ });
+  const pola = page.getByRole("button", { name: /ポーラ美術館を地図で表示して詳細を見る/ });
+  await expect(pola).toHaveCount(1);
+  await pola.click();
+  const selectedSpotButton = page.getByRole("button", { name: /選択中：ポーラ美術館/ });
   if (await selectedSpotButton.isVisible()) await selectedSpotButton.click();
   const add = page.getByRole("button", { name: "旅程へ追加" });
   await expect(add).toHaveCount(1);
@@ -22,7 +22,7 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   await expect(dialog).toContainText("おすすめ位置");
   await expect(dialog).toContainText("東京駅着");
   await dialog.getByRole("button", { name: "この位置に追加" }).click();
-  await expect(page.getByRole("status")).toContainText("箱根湿生花園を8月13日に追加しました");
+  await expect(page.getByRole("status")).toContainText("ポーラ美術館を8月13日に追加しました");
   await expect(page.locator(".return-card")).toContainText("東京駅着");
 
   const remove = page.getByRole("button", { name: "最後の観光地を外す" });
@@ -80,7 +80,7 @@ test("地図上の仮地点を確定し、追加フォームへ戻る", async ({
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("設定済み：")).toBeVisible();
   await dialog.getByRole("button", { name: "予定を追加" }).click();
-  await expect(page.getByText("地図で決めた休憩")).toBeVisible();
+  await expect(page.getByText("地図で決めた休憩", { exact: true })).toBeVisible();
 });
 
 test("地点選択のキャンセル後も入力内容を保持する", async ({ page }) => {
