@@ -24,7 +24,7 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   await expect(dialog).toContainText("おすすめ位置");
   await expect(dialog).toContainText("東京駅着");
   await dialog.getByRole("button", { name: "この位置に追加" }).click();
-  await expect(page.getByRole("status")).toContainText("ポーラ美術館を8月13日に追加しました");
+  await expect(page.locator(".toast")).toContainText("ポーラ美術館を8月13日に追加しました");
   await expect(page.locator(".return-card")).toContainText("東京駅着");
 
   const remove = page.getByRole("button", { name: "最後の観光地を外す" });
