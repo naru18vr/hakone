@@ -17,7 +17,7 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   await page.waitForTimeout(500);
   const add = page.getByRole("button", { name: "旅程へ追加" });
   await expect(add).toBeVisible();
-  await add.click();
+  await add.press("Enter");
   const dialog = page.locator(".add-dialog");
   await expect(dialog).toContainText("どの日に追加しますか？");
   await dialog.getByRole("button", { name: "8月13日" }).click();
