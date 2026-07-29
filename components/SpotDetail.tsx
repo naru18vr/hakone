@@ -3,6 +3,7 @@
 import { Car, Check, Clock3, CloudRain, ExternalLink, Footprints, MapPin, Plus, Users, X } from "lucide-react";
 import { CrowdSource, ItineraryItem, Spot } from "@/types";
 import { crowdDetails, crowdText } from "@/lib/crowd";
+import { tripAvailabilityLabel } from "@/lib/spot-view";
 
 const sourceLabel: Record<CrowdSource, string> = {
   realtime: "リアルタイム情報",
@@ -24,7 +25,7 @@ type Props = {
 export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanceFromOdawara, onOpenAdd, onClose }: Props) {
 
   if (!spot) return (
-    <section className="detail-empty">
+    <section className="detail-empty" id="spot-detail-panel">
       <MapPin size={28} />
       <p>地図上のマーカー、または観光地一覧を選ぶと、営業時間・歩く量・混雑の目安を確認できます。</p>
     </section>
@@ -35,7 +36,7 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
   const arrival = itinerary.find((item) => item.type === "spot" && item.spotId === spot.id)?.startTime;
 
   return (
-    <section className="detail-card" aria-live="polite">
+    <section className="detail-card" id="spot-detail-panel" aria-live="polite">
       <div className={`detail-visual category-art ${spot.category}`} aria-label={`${spot.category}のイラスト`}>
         <span>{spot.category === "美術館" ? "✦" : spot.category === "自然" ? "♧" : spot.category === "湖" ? "≈" : spot.category === "神社" ? "⛩" : spot.category === "駅" ? "⌘" : "◉"}</span>
         <strong>{spot.name.slice(0, 1)}</strong>
@@ -54,6 +55,7 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
       <div className="fact-grid">
         <Fact icon={<Clock3 size={15} />} label="営業時間" value={spot.openingHours ?? "要確認"} />
         <Fact icon={<Clock3 size={15} />} label="定休日" value={spot.closedDays ?? "要確認"} />
+        <Fact icon={<Check size={15} />} label="旅行日の営業" value={tripAvailabilityLabel(spot)} />
         <Fact icon={<Users size={15} />} label="料金（大人）" value={spot.priceAdult ?? "要確認"} />
         {spot.reviewScore && <Fact icon={<Users size={15} />} label="参考評価" value={spot.reviewScore} />}
         <Fact icon={<Clock3 size={15} />} label="滞在目安" value={`${spot.stayMinutes}分`} />
@@ -66,7 +68,7 @@ export default function SpotDetail({ spot, itinerary, distanceFromHotel, distanc
         <span>宿泊予定地から <strong>{distanceFromHotel?.toFixed(1) ?? "-"} km</strong></span>
         <span>小田原駅から <strong>{distanceFromOdawara?.toFixed(1) ?? "-"} km</strong></span>
       </div>
-      <p className="data-note">情報区分：静的な参考データ／登録日 2026-07-24<br />{spot.dataNote}</p>
+      <p className="data-note">情報区分：静的な参考データ／施設情報の確認日 {spot.factCheckedAt ?? spot.crowdUpdatedAt}<br />{spot.dataNote}</p>
       <div className="detail-actions">
         <button className="primary-button" onClick={() => onOpenAdd(spot)}>{addedDays.length ? <Check size={17} /> : <Plus size={17} />}{addedDays.length ? ` 8月${addedDays.map((day) => day === 1 ? "12" : "13").join("・")}日に追加済み` : " 旅程へ追加"}</button>
         {spot.officialUrl && <a className="secondary-button" href={spot.officialUrl} target="_blank" rel="noreferrer">公式サイト <ExternalLink size={15} /></a>}

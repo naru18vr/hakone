@@ -6,6 +6,7 @@ import { AddPlacement, AddSpotRequest, addSpotToItinerary } from "@/lib/itinerar
 import { RecommendedPlacement, recommendSpotPlacement } from "@/lib/recommendation";
 import { minutesToText } from "@/lib/trip";
 import { calculateReturnTrip } from "@/lib/return-trip";
+import { isSpotOpenOnDay } from "@/lib/spot-view";
 import { ItineraryItem, ReturnSettings, Spot } from "@/types";
 
 type Props = {
@@ -26,7 +27,7 @@ export default function AddSpotDialog({ spot, itinerary, spots, returnSettings, 
   const closeRef = useRef<HTMLButtonElement>(null);
   const existingDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))];
   const [step, setStep] = useState<Step>(existingDays.length ? 0 : 1);
-  const [day, setDay] = useState<1 | 2>(2);
+  const [day, setDay] = useState<1 | 2>(spot.tripOpenDays?.[0] ?? 2);
   const [placement, setPlacement] = useState<AddPlacement | "recommended">("recommended");
   const [targetId, setTargetId] = useState("");
   const [preferredTime, setPreferredTime] = useState("13:30");
@@ -63,7 +64,7 @@ export default function AddSpotDialog({ spot, itinerary, spots, returnSettings, 
       <div className="dialog-heading"><div><span className="eyebrow">旅程へ追加</span><h2 id="add-dialog-title">{spot.name}</h2></div><button ref={closeRef} className="icon-button" onClick={onClose} aria-label="追加画面を閉じる"><X size={20} /></button></div>
       {step > 0 && <div className="dialog-steps" aria-label={`ステップ${step} / 3`}><span className={step >= 1 ? "active" : ""}>1 日付</span><span className={step >= 2 ? "active" : ""}>2 追加方法</span><span className={step >= 3 ? "active" : ""}>3 基準地点</span></div>}
       {step === 0 && <div className="existing-actions"><strong>8月{existingDays.map((entry) => entry === 1 ? "12" : "13").join("・")}日に追加済み</strong><button className="secondary-button" onClick={() => { onViewExisting(); onClose(); }}>旅程上の位置を見る</button><button onClick={() => setStep(1)}>別の日にも追加</button><button onClick={() => { onRemoveExisting(); onClose(); }}>旅程から削除</button></div>}
-      {step === 1 && <div className="dialog-choice"><p>どの日に追加しますか？</p><button onClick={() => selectDay(1)}>8月12日</button><button onClick={() => selectDay(2)}>8月13日</button></div>}
+      {step === 1 && <div className="dialog-choice"><p>どの日に追加しますか？</p><button disabled={!isSpotOpenOnDay(spot, 1)} onClick={() => selectDay(1)}>8月12日{!isSpotOpenOnDay(spot, 1) ? "（休業予定）" : ""}</button><button disabled={!isSpotOpenOnDay(spot, 2)} onClick={() => selectDay(2)}>8月13日{!isSpotOpenOnDay(spot, 2) ? "（休業予定）" : ""}</button>{!spot.tripOpenDays && <small>旅行日の営業は未確定です。追加後も公式サイトで確認してください。</small>}</div>}
       {step >= 2 && <>
         <div className="dialog-selected-day"><MapPin size={15} /> 追加する日：<strong>8月{day === 1 ? "12" : "13"}日</strong><button onClick={() => setStep(1)}>変更</button></div>
         <div className="dialog-choice"><p>どこへ追加しますか？</p>{(["recommended", "end", "before", "after", "time"] as const).map((item) => <button key={item} className={placement === item ? "active" : ""} onClick={() => choosePlacement(item)}>{labels[item]}</button>)}</div>

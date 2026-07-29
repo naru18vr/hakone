@@ -6,11 +6,14 @@ import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap, useM
 import { createRouteCache, getRoutePresentation } from "@/lib/routing";
 import { isSameLocation } from "@/lib/location";
 import { buildMapMarkers } from "@/lib/map-markers";
+import { tripAvailabilityLabel } from "@/lib/spot-view";
 import { CustomLocation, ItineraryItem, RouteMode, RouteResult, Spot } from "@/types";
 
 type RouteModes = Record<1 | 2, RouteMode>;
 type Props = {
   spots: Spot[];
+  spotCatalog?: Spot[];
+  totalSpotCount?: number;
   selectedSpot?: Spot;
   focusRequestId?: number;
   routeDay: 1 | 2 | "all";
@@ -68,7 +71,33 @@ function LocationPickHandler({ enabled, onPick }: { enabled: boolean; onPick?: (
   return null;
 }
 
-export default function MapCanvas({ spots, selectedSpot, focusRequestId = 0, routeDay, onSelectSpot, itinerary, onRouteModesChange, locationPickMode = false, locationPickCandidate, onLocationPickCandidate, onConfirmLocationPick, onCancelLocationPick }: Props) {
+function SpotPopupContent({ spot, onSelectSpot }: { spot: Spot; onSelectSpot: (spot: Spot) => void }) {
+  return (
+    <article className="spot-map-popup" aria-label={`${spot.name}の施設情報`}>
+      <header>
+        <span>{spot.category === "飲食" ? "食事処" : spot.category}</span>
+        <h3>{spot.name}</h3>
+      </header>
+      <p>{spot.description}</p>
+      <dl>
+        <div><dt>滞在目安</dt><dd>{spot.stayMinutes}分</dd></div>
+        {spot.category === "飲食"
+          ? <div><dt>価格目安</dt><dd>{spot.priceAdult ?? "要確認"}</dd></div>
+          : <div><dt>混雑</dt><dd>{crowdLabel[spot.crowdLevel]}（{spot.crowdSource === "realtime" ? "リアルタイム" : spot.crowdSource === "forecast" ? "予測" : spot.crowdSource === "manual" ? "手動" : "一般傾向"}）</dd></div>}
+        <div><dt>駐車場</dt><dd>{spot.parkingAvailable ? `あり${spot.parkingSpaces ? `・${spot.parkingSpaces}` : ""}` : "なし・要確認"}</dd></div>
+        <div><dt>雨天</dt><dd>{spot.rainyDayFriendly ? "利用しやすい" : "屋外中心"}</dd></div>
+        {spot.openingHours && <div><dt>営業時間</dt><dd>{spot.openingHours}</dd></div>}
+        <div><dt>旅行日</dt><dd>{tripAvailabilityLabel(spot)}</dd></div>
+      </dl>
+      <div className="spot-map-popup-actions">
+        <button type="button" onClick={(event) => { event.stopPropagation(); onSelectSpot(spot); }}>詳しい情報を見る</button>
+        {(spot.officialUrl || spot.category === "飲食") && <a href={spot.officialUrl ?? `https://tabelog.com/rstLst/?sk=${encodeURIComponent(spot.name)}`} target="_blank" rel="noreferrer">{spot.officialUrl ? "公式サイト" : "食べログ"}</a>}
+      </div>
+    </article>
+  );
+}
+
+export default function MapCanvas({ spots, spotCatalog = spots, totalSpotCount, selectedSpot, focusRequestId = 0, routeDay, onSelectSpot, itinerary, onRouteModesChange, locationPickMode = false, locationPickCandidate, onLocationPickCandidate, onConfirmLocationPick, onCancelLocationPick }: Props) {
   const [routes, setRoutes] = useState<Partial<Record<1 | 2, RouteResult>>>({});
   const [routeModes, setRouteModes] = useState<RouteModes>({ 1: "loading", 2: "loading" });
   const requestId = useRef(0);
@@ -158,6 +187,8 @@ export default function MapCanvas({ spots, selectedSpot, focusRequestId = 0, rou
   ], [spots, itinerary, routeDay]);
   const visibleDays = routeDay === "all" ? [1, 2] as const : [routeDay] as const;
   const mapMarkers = useMemo(() => buildMapMarkers(itinerary, routeDay), [itinerary, routeDay]);
+  const sequenceSpotIds = useMemo(() => new Set(mapMarkers.map((marker) => marker.item.spotId).filter((id): id is string => Boolean(id))), [mapMarkers]);
+  const candidateSpots = useMemo(() => spots.filter((spot) => !sequenceSpotIds.has(spot.id)), [spots, sequenceSpotIds]);
   const visibleModes = visibleDays.map((day) => routeModes[day]);
   const routeStatus: RouteMode = visibleModes.some((mode) => mode === "loading") ? "loading" : visibleModes.some((mode) => mode === "slow") ? "slow" : visibleModes.every((mode) => mode === "routing") ? "routing" : "fallback";
   const routeModeText = routeStatus === "loading"
@@ -178,57 +209,46 @@ export default function MapCanvas({ spots, selectedSpot, focusRequestId = 0, rou
         />
         <FitToMarkers points={fitPoints} />
         <FocusSelectedSpot spot={selectedSpot} requestId={focusRequestId} disabled={locationPickMode} />
-        {spots.map((spot) => (
-          <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel], undefined, selectedSpot?.id === spot.id)} zIndexOffset={selectedSpot?.id === spot.id ? 1000 : 0} eventHandlers={{ click: () => { if (!locationPickMode) onSelectSpot(spot); } }}>
+        {candidateSpots.map((spot) => (
+          <Marker key={spot.id} position={[spot.latitude, spot.longitude]} icon={markerIcon(crowdColor[spot.crowdLevel], undefined, selectedSpot?.id === spot.id)} zIndexOffset={selectedSpot?.id === spot.id ? 1000 : 0}>
             <Tooltip direction="top" offset={[0, selectedSpot?.id === spot.id ? -36 : -27]} opacity={1}>{spot.name}</Tooltip>
-            <Popup minWidth={235} maxWidth={285} offset={[0, -28]}>
-              <article className="spot-map-popup" aria-label={`${spot.name}の施設情報`}>
-                <header>
-                  <span>{spot.category === "飲食" ? "食事処" : spot.category}</span>
-                  <h3>{spot.name}</h3>
-                </header>
-                <p>{spot.description}</p>
-                <dl>
-                  <div><dt>滞在目安</dt><dd>{spot.stayMinutes}分</dd></div>
-                  {spot.category === "飲食"
-                    ? <div><dt>価格目安</dt><dd>{spot.priceAdult ?? "要確認"}</dd></div>
-                    : <div><dt>混雑</dt><dd>{crowdLabel[spot.crowdLevel]}（{spot.crowdSource === "realtime" ? "リアルタイム" : spot.crowdSource === "forecast" ? "予測" : spot.crowdSource === "manual" ? "手動" : "一般傾向"}）</dd></div>}
-                  <div><dt>駐車場</dt><dd>{spot.parkingAvailable ? `あり${spot.parkingSpaces ? `・${spot.parkingSpaces}` : ""}` : "なし・要確認"}</dd></div>
-                  <div><dt>雨天</dt><dd>{spot.rainyDayFriendly ? "利用しやすい" : "屋外中心"}</dd></div>
-                  {spot.openingHours && <div><dt>営業時間</dt><dd>{spot.openingHours}</dd></div>}
-                </dl>
-                <div className="spot-map-popup-actions">
-                  <button type="button" onClick={(event) => { event.stopPropagation(); onSelectSpot(spot); }}>詳しい情報を見る</button>
-                  {(spot.officialUrl || spot.category === "飲食") && <a href={spot.officialUrl ?? `https://tabelog.com/rstLst/?sk=${encodeURIComponent(spot.name)}`} target="_blank" rel="noreferrer">{spot.officialUrl ? "公式サイト" : "食べログ"}</a>}
-                </div>
-              </article>
-            </Popup>
+            {!locationPickMode && <Popup minWidth={235} maxWidth={285} offset={[0, -28]}>
+              <SpotPopupContent spot={spot} onSelectSpot={onSelectSpot} />
+            </Popup>}
           </Marker>
         ))}
         {visibleDays.map((day) => routes[day]?.geometry && (
           <Polyline key={`route-${day}`} positions={routes[day]!.geometry} pathOptions={{ color: routeColors[day], weight: 5, opacity: 0.85, dashArray: routes[day]!.source === "fallback" ? "8 8" : undefined }} />
         ))}
-        {mapMarkers.map((marker) => (
-          <Marker key={`sequence-${marker.item.id}`} position={[marker.item.latitude!, marker.item.longitude!]} icon={marker.isCustom ? customMarkerIcon(marker.day, marker.mapOrder, marker.symbol, marker.ariaLabel) : markerIcon(routeColors[marker.day], marker.mapOrder)}>
-            <Tooltip direction="bottom" offset={[0, 24]} opacity={1}>{marker.day}日目・地図{marker.mapOrder}番　{marker.typeLabel}：{marker.item.title}</Tooltip>
-          </Marker>
-        ))}
+        {mapMarkers.map((marker) => {
+          const spot = marker.item.spotId ? spotCatalog.find((candidate) => candidate.id === marker.item.spotId) : undefined;
+          return (
+            <Marker key={`sequence-${marker.item.id}`} position={[marker.item.latitude!, marker.item.longitude!]} icon={marker.isCustom ? customMarkerIcon(marker.day, marker.mapOrder, marker.symbol, marker.ariaLabel) : markerIcon(routeColors[marker.day], marker.mapOrder, selectedSpot?.id === spot?.id)}>
+              <Tooltip direction="bottom" offset={[0, 24]} opacity={1}>{marker.day}日目・地図{marker.mapOrder}番　{marker.typeLabel}：{marker.item.title}</Tooltip>
+              {spot && !locationPickMode && <Popup minWidth={235} maxWidth={285} offset={[0, -28]}><SpotPopupContent spot={spot} onSelectSpot={onSelectSpot} /></Popup>}
+            </Marker>
+          );
+        })}
         <LocationPickHandler enabled={locationPickMode} onPick={onLocationPickCandidate} />
         {locationPickCandidate && <Marker position={[locationPickCandidate.latitude, locationPickCandidate.longitude]} icon={markerIcon("#166cbe", "?")}><Tooltip permanent direction="top" offset={[0, -28]}>選択地点</Tooltip></Marker>}
       </MapContainer>
-      <div className="map-controls">
-        <div className="legend-title">混雑度（予測・一般傾向）</div>
-        {crowdLegend.map(([level, label]) => (
-          <div className="legend-row" key={level}><span className="legend-dot" style={{ background: crowdColor[level] }} />{label}</div>
-        ))}
-        <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
-        <div className="map-marker-legend"><strong>予定マーカー</strong><span>🍴 食事　☕ 休憩　▣ 宿泊</span><span>🚗 レンタカー　🚆 交通　★ 自由予定　✎ メモ</span><small>地図番号は、地図地点が設定された予定のみを対象にしています。地点なし予定は旅程にのみ表示されます。</small></div>
-      </div>
+      <details className="map-controls">
+        <summary>凡例・表示説明</summary>
+        <div className="map-legend-body">
+          <div className="legend-title">混雑度（予測・一般傾向）</div>
+          {crowdLegend.map(([level, label]) => (
+            <div className="legend-row" key={level}><span className="legend-dot" style={{ background: crowdColor[level] }} />{label}</div>
+          ))}
+          <div className="route-key"><span className="route-line day-one" /> 1日目 <span className="route-line day-two" /> 2日目</div>
+          <div className="map-marker-legend"><strong>予定マーカー</strong><span>🍴 食事　☕ 休憩　▣ 宿泊</span><span>🚗 レンタカー　🚆 交通　★ 自由予定　✎ メモ</span><small>地図番号は、地図地点が設定された予定のみを対象にしています。地点なし予定は旅程にのみ表示されます。</small></div>
+        </div>
+      </details>
+      <div className="map-result-count">{spots.length} / {totalSpotCount ?? spots.length}件の候補を表示</div>
       <div className={`route-mode ${routeStatus}`} aria-live="polite">
         {routeStatus === "loading" || routeStatus === "slow" ? routePresentation.label : routeModeText}
         {routeStatus === "fallback" && <button onClick={() => setRetryKey((value) => value + 1)}>道路経路を再取得</button>}
       </div>
-      {selectedSpot && <div className="map-selected">選択中：{selectedSpot.name}</div>}
+      {selectedSpot && <button type="button" className="map-selected" onClick={() => onSelectSpot(selectedSpot)}>選択中：{selectedSpot.name}<small>詳細を開く</small></button>}
       {locationPickMode && <div className="location-pick-overlay" role="status" aria-live="assertive"><strong>地点選択モード</strong><span>地図をクリックして予定の場所を選んでください。</span>{locationPickCandidate ? <><small>緯度 {locationPickCandidate.latitude.toFixed(6)} ／ 経度 {locationPickCandidate.longitude.toFixed(6)}</small><div><button className="primary-button" onClick={onConfirmLocationPick}>この地点を使用</button><button className="secondary-button" onClick={() => onLocationPickCandidate?.()}>選び直す</button></div><button className="text-button danger" onClick={onCancelLocationPick}>キャンセル</button></> : <button className="secondary-button" onClick={onCancelLocationPick}>選択を中止</button>}</div>}
     </section>
   );

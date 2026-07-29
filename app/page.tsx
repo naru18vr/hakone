@@ -16,6 +16,7 @@ import { crowdDetails, crowdText } from "@/lib/crowd";
 import { decodeSharedPayload, SharedDecodeResult } from "@/lib/share";
 import { restoreTripState, serializeTripState } from "@/lib/storage";
 import { defaultTravelConditions, partyLabel } from "@/lib/conditions";
+import { forecastCrowdLevel, isSpotOpenOnDay, tripAvailabilityLabel } from "@/lib/spot-view";
 import { airDistanceKm, assessStress, calcTripSummary, formatEndTime, getStressDescription, minutesToText } from "@/lib/trip";
 import { CustomLocation, ItineraryItem, ReturnSettings, RouteMode, SamplePlan, Spot, TravelConditions, TripState } from "@/types";
 
@@ -25,6 +26,8 @@ type FilterKey = "観光地" | "美術館" | "自然" | "絶景" | "湖" | "神�
 const primaryFilters: FilterKey[] = ["観光地", "食事処", "混雑が少ない", "子ども向け", "雨天対応", "宿泊施設から近い", "滞在1時間以内"];
 const advancedFilters: FilterKey[] = ["美術館", "自然", "絶景", "湖", "神社", "駐車場あり", "無料", "飲食店あり", "トイレあり"];
 const STORAGE_KEY = "hakone-yurutabi-planner:v1";
+const INITIAL_SPOT_LIMIT = 12;
+const SPOT_PAGE_SIZE = 12;
 
 type RouteModes = Record<1 | 2, RouteMode>;
 
@@ -55,6 +58,7 @@ export default function Home() {
   const [viewingShared, setViewingShared] = useState(false);
   const [locationPickMode, setLocationPickMode] = useState(false);
   const [locationPickCandidate, setLocationPickCandidate] = useState<CustomLocation | undefined>(undefined);
+  const [spotListLimit, setSpotListLimit] = useState(INITIAL_SPOT_LIMIT);
   const locationPickCommit = useRef<((location: CustomLocation) => void) | undefined>(undefined);
 
   useEffect(() => {
@@ -120,11 +124,7 @@ export default function Home() {
 
   const spots = useMemo(() => baseSpots.map((spot) => {
     if (crowdMode === "general") return spot;
-    const hour = Number(visitTime.slice(0, 2));
-    const noonBoost = hour >= 10 && hour < 15 ? 1 : hour >= 15 ? 0 : -1;
-    const weatherBoost = weather === "雨" && spot.rainyDayFriendly ? 1 : weather === "雨" && !spot.rainyDayFriendly ? -1 : 0;
-    const obonBoost = 1;
-    return { ...spot, crowdLevel: Math.max(1, Math.min(4, spot.crowdLevel + noonBoost + weatherBoost + obonBoost)) as 1 | 2 | 3 | 4, crowdSource: "forecast" as const, crowdUpdatedAt: `8/12 ${visitTime}想定` };
+    return { ...spot, crowdLevel: forecastCrowdLevel(spot, visitTime, weather), crowdSource: "forecast" as const };
   }), [crowdMode, visitTime, weather]);
 
   const referencePoint = useMemo(() => {
@@ -159,6 +159,11 @@ export default function Home() {
     if (spotSort === "price") return Number(a.priceAdult !== "無料") - Number(b.priceAdult !== "無料");
     return a.stayMinutes - b.stayMinutes;
   }), [spots, query, activeFilters, spotSort, referencePoint]);
+  const displayedSpots = useMemo(() => visibleSpots.slice(0, spotListLimit), [visibleSpots, spotListLimit]);
+  const mapSpots = useMemo(() => {
+    if (!selectedSpot || displayedSpots.some((spot) => spot.id === selectedSpot.id)) return displayedSpots;
+    return [...displayedSpots, selectedSpot];
+  }, [displayedSpots, selectedSpot]);
 
   const day1 = itinerary.filter((item) => item.day === 1).sort((a, b) => a.order - b.order);
   const day2 = itinerary.filter((item) => item.day === 2).sort((a, b) => a.order - b.order);
@@ -175,6 +180,7 @@ export default function Home() {
   const currentTripState: TripState = { itinerary, hotelName, selectedSpotId: selectedSpot?.id, activeDay, routeDay, activeFilters, crowdMode, visitTime, weather, returnSettings, conditions };
 
   const toggleFilter = (filter: FilterKey) => {
+    setSpotListLimit(INITIAL_SPOT_LIMIT);
     if (filter === "観光地" || filter === "食事処") {
       // 大分類は他の条件や検索語をリセットし、観光地と食事処を分かりやすく切り替える。
       setQuery("");
@@ -202,6 +208,10 @@ export default function Home() {
     locationPickCommit.current = undefined;
   };
   const addSpot = (spot: Spot, request: AddSpotRequest) => {
+    if (!isSpotOpenOnDay(spot, request.day)) {
+      setToast(`${spot.name}は8月${request.day === 1 ? "12" : "13"}日が休業予定のため追加できません。公式情報をご確認ください。`);
+      return;
+    }
     const result = addSpotToItinerary(itinerary, spot, request);
     if (!result.added) {
       setToast(`${spot.name}はすでに旅程へ追加済みです。別日に入れる場合は追加画面で明示してください。`);
@@ -268,6 +278,12 @@ export default function Home() {
     setMobileSheetOpen(true);
     window.setTimeout(() => document.getElementById(panelId)?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
   };
+  const openSpotDetail = (spot: Spot) => {
+    setSelectedSpot(spot);
+    setMapFocusRequest((value) => value + 1);
+    setMobileSheetOpen(true);
+    window.setTimeout(() => document.getElementById("spot-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
+  };
 
   return (
     <main>
@@ -279,11 +295,16 @@ export default function Home() {
       <div className={`app-grid ${mobileSheetOpen ? "sheet-open" : ""}`}>
         <aside className="sidebar" aria-label="旅行計画パネル">
           <button className="mobile-sheet-handle" onClick={() => setMobileSheetOpen((value) => !value)} aria-expanded={mobileSheetOpen}><span /><span>{mobileSheetOpen ? "計画パネルを閉じる" : "旅程・観光地を開く"}</span>{mobileSheetOpen ? <X size={16} /> : <Menu size={16} />}</button>
+          <nav className="planner-shortcuts" aria-label="旅行計画の手順">
+            <button type="button" onClick={() => openMobilePanel("trip-panel")}><span>1</span><b>条件</b><small>時刻を確認</small></button>
+            <button type="button" onClick={() => openMobilePanel("spots-panel")}><span>2</span><b>行き先</b><small>地図で比較</small></button>
+            <button type="button" onClick={() => openMobilePanel("itinerary-panel")}><span>3</span><b>旅程</b><small>順番を調整</small></button>
+          </nav>
           <section className="card trip-card" id="trip-panel">
             <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>保存</button><button className="text-button" onClick={() => setShareOpen(true)}><Share2 size={14} /> 共有</button><button className="text-button" onClick={() => window.print()}><Printer size={14} /> 印刷</button><button className="text-button" onClick={() => { setToast("印刷画面で、プリンターとして「PDFに保存」を選択してください。"); window.print(); }}>PDF用画面</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div></div>
             <div className="trip-facts"><span><MapPinned size={15} /> {conditions.arrivalPlace}・{conditions.day1StartTime}出発</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> {conditions.planPolicy}</span></div>
             <label className="field-label">宿泊施設（仮地点）<input value={hotelName} onChange={(event) => setHotelName(event.target.value)} /></label>
-            <details className="travel-condition-editor" open>
+            <details className="travel-condition-editor">
               <summary>日程・出発時刻・旅行条件を編集</summary>
               <div className="scenario-grid">
                 <label>開始日<input type="date" value={conditions.startDate} onChange={(event) => setConditions((value) => ({ ...value, startDate: event.target.value }))} /></label>
@@ -309,13 +330,15 @@ export default function Home() {
 
           <section className="card spots-card" id="spots-panel">
             <div className="section-heading"><div><span className="eyebrow">観光地</span><h2>行き先を探す</h2></div><span className="count-badge">{visibleSpots.length}件</span></div>
-            <label className="search-box"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="観光地・条件を検索" /></label>
+            <p className="spot-list-hint">候補を押すと地図がその場所へ移動します。公式リンクは右端から開けます。</p>
+            <label className="search-box"><Search size={16} /><input value={query} onChange={(event) => { setQuery(event.target.value); setSpotListLimit(INITIAL_SPOT_LIMIT); }} placeholder="観光地・食事処を検索" /></label>
             <div className="filter-heading"><ListFilter size={15} /> 絞り込み</div>
             <div className="filter-chips">{primaryFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter === "雨天対応" ? "雨でもOK" : filter === "宿泊施設から近い" ? "宿から近い" : filter}</button>)}</div>
             <details className="advanced-filters"><summary>詳細条件</summary><div className="filter-chips">{advancedFilters.map((filter) => <button key={filter} className={activeFilters.includes(filter) ? "active" : ""} onClick={() => toggleFilter(filter)}>{filter}</button>)}</div></details>
-            <div className="distance-reference" aria-label="観光地一覧の距離基準"><span>距離の基準</span>{(["hotel", "odawara", "last", "selected"] as const).map((key) => <button key={key} className={distanceReference === key ? "active" : ""} onClick={() => setDistanceReference(key)}>{({ hotel: "宿泊施設", odawara: "小田原駅", last: "旅程の最後", selected: "選択中" })[key]}</button>)}</div>
-            <label className="sort-select">並べ替え<select value={spotSort} onChange={(event) => setSpotSort(event.target.value as typeof spotSort)}><option value="near">基準地点から近い</option><option value="drive">車時間が短い</option><option value="add">追加時間が短い</option><option value="crowd">混雑が少ない</option><option value="child">子ども向け</option><option value="rain">雨天対応</option><option value="stay">滞在時間が短い</option><option value="price">料金が安い</option></select></label>
-            <div className="spot-list">{visibleSpots.map((spot) => { const straight = airDistanceKm(spot, referencePoint); const distance = straight * (straight < 3 ? 1.45 : 1.65); const minutes = Math.max(6, Math.round(distance * 2.2 + 4)); const addedDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))]; const crowd = crowdDetails(spot); const externalUrl = spot.officialUrl ?? (spot.category === "飲食" ? `https://tabelog.com/rstLst/?sk=${encodeURIComponent(spot.name)}` : undefined); const externalLabel = spot.officialUrl ? "公式" : "食べログ"; return <div key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`}><button type="button" className="spot-row-main" onClick={() => { setSelectedSpot(spot); setMapFocusRequest((value) => value + 1); setMobileSheetOpen(true); }} aria-label={`${spot.name}を地図で表示して詳細を見る`}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small className="spot-distance">{({ hotel: "宿から", odawara: "小田原駅から", last: "旅程の最後から", selected: "選択中の地点から" })[distanceReference]} 車{minutes}分・{distance.toFixed(1)}km</small>{spot.category === "飲食" ? <small>駐車場 {spot.parkingAvailable ? "あり" : "要確認"} · {spot.priceAdult ?? "料金は公式で確認"}</small> : <small>施設 {crowdText(crowd.facility.level)} · 駐車 {crowdText(crowd.parking.level)} · 道路 {crowdText(crowd.road.level)}</small>}<small>{spot.category} · 滞在 {spot.stayMinutes}分 · 雨天：{spot.rainyDayFriendly ? "◎" : "△"}{addedDays.length ? ` · 8月${addedDays.map((day) => day === 1 ? "12" : "13").join("・")}日に追加済み` : ""}</small></span><ChevronDown size={15} /></button>{externalUrl && <a className="spot-official-link" href={externalUrl} target="_blank" rel="noreferrer" aria-label={`${spot.name}の${externalLabel}を新しいタブで開く`}>{externalLabel} <ExternalLink size={12} /></a>}</div>; })}</div>
+            <div className="distance-reference" aria-label="観光地一覧の距離基準"><span>距離の基準</span>{(["hotel", "odawara", "last", "selected"] as const).map((key) => <button key={key} className={distanceReference === key ? "active" : ""} onClick={() => { setDistanceReference(key); setSpotListLimit(INITIAL_SPOT_LIMIT); }}>{({ hotel: "宿泊施設", odawara: "小田原駅", last: "旅程の最後", selected: "選択中" })[key]}</button>)}</div>
+            <label className="sort-select">並べ替え<select value={spotSort} onChange={(event) => { setSpotSort(event.target.value as typeof spotSort); setSpotListLimit(INITIAL_SPOT_LIMIT); }}><option value="near">基準地点から近い</option><option value="drive">車時間が短い</option><option value="add">追加時間が短い</option><option value="crowd">混雑が少ない</option><option value="child">子ども向け</option><option value="rain">雨天対応</option><option value="stay">滞在時間が短い</option><option value="price">料金が安い</option></select></label>
+            <div className="spot-list">{displayedSpots.map((spot) => { const straight = airDistanceKm(spot, referencePoint); const distance = straight * (straight < 3 ? 1.45 : 1.65); const minutes = Math.max(6, Math.round(distance * 2.2 + 4)); const addedDays = [...new Set(itinerary.filter((item) => item.type === "spot" && item.spotId === spot.id).map((item) => item.day))]; const crowd = crowdDetails(spot); const externalUrl = spot.officialUrl ?? (spot.category === "飲食" ? `https://tabelog.com/rstLst/?sk=${encodeURIComponent(spot.name)}` : undefined); const externalLabel = spot.officialUrl ? "公式" : "食べログ"; return <div key={spot.id} className={`spot-row ${selectedSpot?.id === spot.id ? "selected" : ""}`}><button type="button" className="spot-row-main" onClick={() => { setSelectedSpot(spot); setMapFocusRequest((value) => value + 1); setMobileSheetOpen(false); }} aria-label={`${spot.name}を地図で表示して詳細を見る`}><span className={`crowd-mini l${spot.crowdLevel}`} /><span className="spot-row-content"><strong>{spot.name}</strong><small className="spot-distance">{({ hotel: "宿から", odawara: "小田原駅から", last: "旅程の最後から", selected: "選択中の地点から" })[distanceReference]} 車{minutes}分・{distance.toFixed(1)}km</small>{spot.category === "飲食" ? <small>駐車場 {spot.parkingAvailable ? "あり" : "要確認"} · {spot.priceAdult ?? "料金は公式で確認"}</small> : <small>施設 {crowdText(crowd.facility.level)} · 駐車 {crowdText(crowd.parking.level)} · 道路 {crowdText(crowd.road.level)}</small>}<small>{spot.category} · 滞在 {spot.stayMinutes}分 · 雨天：{spot.rainyDayFriendly ? "◎" : "△"}{addedDays.length ? ` · 8月${addedDays.map((day) => day === 1 ? "12" : "13").join("・")}日に追加済み` : ""}</small><small className={`trip-open-status ${spot.tripOpenDays ? "checked" : "unconfirmed"}`}>{tripAvailabilityLabel(spot)}</small></span><ChevronDown size={15} /></button>{externalUrl && <a className="spot-official-link" href={externalUrl} target="_blank" rel="noreferrer" aria-label={`${spot.name}の${externalLabel}を新しいタブで開く`}>{externalLabel} <ExternalLink size={12} /></a>}</div>; })}</div>
+            <div className="spot-list-footer"><span>{visibleSpots.length}件中 {displayedSpots.length}件を表示</span>{displayedSpots.length < visibleSpots.length && <button type="button" className="secondary-button" onClick={() => setSpotListLimit((value) => value + SPOT_PAGE_SIZE)}>さらに{Math.min(SPOT_PAGE_SIZE, visibleSpots.length - displayedSpots.length)}件表示</button>}</div>
           </section>
 
           <SpotDetail key={selectedSpot?.id ?? "empty"} spot={selectedSpot} itinerary={itinerary} distanceFromHotel={selectedSpot ? airDistanceKm(selectedSpot, hotelPoint) * 1.45 : undefined} distanceFromOdawara={selectedSpot ? airDistanceKm(selectedSpot, baseSpots[0]) * 1.65 : undefined} onOpenAdd={setAddDialogSpot} onClose={() => setSelectedSpot(undefined)} />
@@ -348,11 +371,11 @@ export default function Home() {
           </section>
 
           <details className="optional-tools"><summary><Sparkles size={15} /> サンプルプランを比較して適用</summary><div className="auto-plan-grid">{autoPlanCards(samplePlans, spots, returnSettings).map(({ title, description, plan, metrics }) => <button className="auto-plan-card" key={title} onClick={() => loadPlan(plan)}><strong>{title}</strong><span>{description}</span><small>走行 {metrics.distance.toFixed(1)}km · 混雑考慮 {minutesToText(metrics.drive)}</small><small>日別負荷 {metrics.day1} / {metrics.day2} · 東京着 {metrics.tokyo}</small><em>このプランを適用</em></button>)}</div></details>
-          <section className="data-disclaimer"><CloudRain size={17} /><div><strong>情報の扱い</strong><p>営業時間・料金・道路状況は変動します。リアルタイム渋滞・混雑は未接続で、推定情報として表示します。</p></div></section>
+          <section className="data-disclaimer"><CloudRain size={17} /><div><strong>情報の扱い</strong><p>主要施設は2026年7月29日に公式情報を再確認しました。飲食店の臨時営業・道路状況は変動するため、8月12・13日の直前にリンク先で再確認してください。混雑は推定で、リアルタイム情報ではありません。</p></div></section>
         </aside>
 
         <section className="map-column">
-          <MapCanvas spots={visibleSpots} selectedSpot={selectedSpot} focusRequestId={mapFocusRequest} routeDay={routeDay} onSelectSpot={(spot) => { setSelectedSpot(spot); setMapFocusRequest((value) => value + 1); setMobileSheetOpen(true); }} itinerary={itinerary} onRouteModesChange={setRouteModes} locationPickMode={locationPickMode} locationPickCandidate={locationPickCandidate} onLocationPickCandidate={setLocationPickCandidate} onConfirmLocationPick={confirmLocationPick} onCancelLocationPick={cancelLocationPick} />
+          <MapCanvas spots={mapSpots} spotCatalog={spots} totalSpotCount={visibleSpots.length} selectedSpot={selectedSpot} focusRequestId={mapFocusRequest} routeDay={routeDay} onSelectSpot={openSpotDetail} itinerary={itinerary} onRouteModesChange={setRouteModes} locationPickMode={locationPickMode} locationPickCandidate={locationPickCandidate} onLocationPickCandidate={setLocationPickCandidate} onConfirmLocationPick={confirmLocationPick} onCancelLocationPick={cancelLocationPick} />
         </section>
       </div>
       <nav className={`mobile-bottom-nav ${mobileSheetOpen ? "is-open" : ""} ${locationPickMode ? "is-location-picking" : ""}`} aria-label="モバイル用ナビゲーション">

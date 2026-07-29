@@ -48,6 +48,10 @@ export type Spot = {
   tags: string[];
   dataNote: string;
   photoKind: "placeholder" | "official" | "user" | "external";
+  /** 2026年8月12日・13日のうち、公式情報から営業予定を確認できた日。 */
+  tripOpenDays?: Array<1 | 2>;
+  /** 営業時間・料金・休館日など施設情報を見直した日。 */
+  factCheckedAt?: string;
   /** 外部口コミの参考値。リアルタイム・公式評価ではない。 */
   reviewScore?: string;
 };

@@ -100,3 +100,43 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width:760px) {
   .spot-map-popup-actions button, .spot-map-popup-actions a { min-height:44px; }
 }
+
+/* 2026-07-29 全体監査: 初期表示を軽くし、条件→候補→旅程の導線を明確化 */
+.planner-shortcuts { position:sticky; top:8px; z-index:20; display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:6px; border:1px solid #cfe0d5; border-radius:13px; background:rgba(255,254,250,.97); box-shadow:0 7px 20px rgba(35,63,55,.09); }
+.planner-shortcuts button { min-height:48px; display:grid; grid-template-columns:24px 1fr; grid-template-rows:auto auto; align-items:center; gap:0 6px; padding:5px 7px; border:0; border-radius:9px; background:transparent; color:#31584d; text-align:left; }
+.planner-shortcuts button:hover, .planner-shortcuts button:focus-visible { background:var(--green-light); }
+.planner-shortcuts button > span { grid-row:1 / 3; width:24px; height:24px; display:grid; place-items:center; border-radius:50%; background:var(--green); color:#fff; font-size:11px; font-weight:800; }
+.planner-shortcuts b { font-size:11px; }.planner-shortcuts small { color:var(--muted); font-size:9px; }
+.spot-list-hint { margin:7px 0 0; color:var(--muted); font-size:10px; line-height:1.45; }
+.spot-list-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:10px; color:var(--muted); font-size:10px; }
+.spot-list-footer .secondary-button { min-height:38px; }
+.trip-open-status { margin-top:2px; font-weight:700; }
+.trip-open-status.checked { color:#267252!important; }
+.trip-open-status.unconfirmed { color:#9a601f!important; }
+.dialog-choice button:disabled { cursor:not-allowed; opacity:.52; background:#f2f3f1; }
+.dialog-choice small { display:block; margin-top:2px; color:var(--muted); font-size:10px; }
+
+.map-controls { width:auto; max-width:calc(100% - 24px); padding:0; overflow:visible; }
+.map-controls summary { min-height:44px; display:flex; align-items:center; padding:8px 11px; border-radius:10px; color:#31584d; font-size:11px; font-weight:800; cursor:pointer; list-style-position:inside; }
+.map-controls[open] { width:min(300px,calc(100% - 24px)); max-height:calc(100% - 80px); overflow:auto; padding-bottom:9px; }
+.map-controls[open] summary { position:sticky; top:0; z-index:1; background:rgba(255,255,252,.98); border-bottom:1px solid #e1e8e3; border-radius:10px 10px 0 0; }
+.map-legend-body { padding:1px 11px 4px; }
+.map-result-count { position:absolute; z-index:500; top:12px; right:12px; max-width:48%; padding:7px 10px; border-radius:999px; background:rgba(255,255,252,.94); box-shadow:0 3px 10px rgba(0,0,0,.12); color:#405e55; font-size:10px; font-weight:700; }
+.map-selected { border:0; cursor:pointer; }
+.map-selected small { display:block; margin-top:1px; font-size:8px; opacity:.82; }
+
+@media (max-width:760px) {
+  .planner-shortcuts { top:53px; z-index:4; margin-top:-4px; }
+  .planner-shortcuts button { min-height:44px; grid-template-columns:21px 1fr; padding:4px; }
+  .planner-shortcuts button > span { width:21px; height:21px; }
+  .planner-shortcuts small { display:none; }
+  .spot-list { max-height:42dvh; }
+  .spot-list-footer { position:sticky; bottom:0; padding:8px 0 calc(4px + env(safe-area-inset-bottom)); background:var(--card); }
+  .map-controls { width:auto; max-width:calc(100% - 18px); max-height:none; }
+  .map-controls[open] { width:min(270px,calc(100% - 18px)); max-height:42%; }
+  .map-result-count { top:10px; right:9px; }
+}
+
+@media print {
+  .planner-shortcuts, .spot-list-footer, .map-result-count { display:none!important; }
+}

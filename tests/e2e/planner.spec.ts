@@ -6,11 +6,13 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
   if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
 
-  const dinner = page.locator('input[type="time"]').last();
-  await dinner.fill("18:30");
+  await page.locator(".return-settings summary").click();
+  await page.getByLabel("夕食予定").fill("18:30");
   const wetland = page.getByRole("button", { name: /箱根湿生花園/ });
   await expect(wetland).toHaveCount(1);
   await wetland.click();
+  const selectedSpotButton = page.getByRole("button", { name: /選択中：箱根湿生花園/ });
+  if (await selectedSpotButton.isVisible()) await selectedSpotButton.click();
   const add = page.getByRole("button", { name: "旅程へ追加" });
   await expect(add).toHaveCount(1);
   await add.click();
@@ -27,6 +29,20 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   if (await remove.count() === 1) await remove.click();
   await page.reload();
   await expect(page.getByText("保存した旅程を復元しました")).toBeVisible();
+});
+
+test("初期候補を絞って表示し、必要な件数だけ追加表示する", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.clear());
+  await page.goto("/");
+  const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
+  if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
+
+  await expect(page.locator(".travel-condition-editor")).not.toHaveAttribute("open");
+  await expect(page.locator(".spot-row")).toHaveCount(12);
+  await expect(page.locator(".spot-list-footer")).toContainText("12件を表示");
+  await page.getByRole("button", { name: /さらに12件表示/ }).click();
+  await expect(page.locator(".spot-row")).toHaveCount(24);
+  await expect(page.locator(".map-controls")).not.toHaveAttribute("open");
 });
 
 test("共有URLを作成し、共有旅程の確認画面を表示する", async ({ page, context }) => {
