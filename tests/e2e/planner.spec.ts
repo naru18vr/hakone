@@ -12,12 +12,11 @@ test("夕食条件、影響プレビュー、追加・削除、復元を確認�
   await expect(pola).toHaveCount(1);
   await pola.click();
   const selectedSpotButton = page.getByRole("button", { name: /選択中：ポーラ美術館/ });
-  if (await sheetHandle.isVisible()) {
-    await expect(selectedSpotButton).toBeVisible();
-    await selectedSpotButton.click();
-  }
+  await expect(selectedSpotButton).toBeVisible();
+  await selectedSpotButton.click();
+  await page.waitForTimeout(500);
   const add = page.getByRole("button", { name: "旅程へ追加" });
-  await expect(add).toHaveCount(1);
+  await expect(add).toBeVisible();
   await add.click();
   const dialog = page.locator(".add-dialog");
   await expect(dialog).toContainText("どの日に追加しますか？");
