@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 
 test("夕食条件、影響プレビュー、追加・削除、復元を確認する", async ({ page }) => {
-  await page.addInitScript(() => window.localStorage.clear());
   await page.goto("/");
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload();
   const sheetHandle = page.getByRole("button", { name: "旅程・観光地を開く" });
   if (await sheetHandle.count() === 1 && await sheetHandle.isVisible()) await sheetHandle.click();
 
