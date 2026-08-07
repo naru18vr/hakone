@@ -188,6 +188,13 @@ export const spots: Spot[] = [
     crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-07-26", crowdHint: "12時前後は釜めしの提供時間を含めて混みやすい", bestTime: "11時台前半または13時半以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "宿から近い", "子ども向け"], dataNote: "水曜休業のため8月12日は候補外です。8月13日の営業状況も直前に公式サイトで再確認してください。", photoKind: "placeholder", reviewScore: "最新の評価・営業状況は公式サイトで確認", tripOpenDays: [2]
   },
   {
+    id: "satsumaya-ton-ton-hakone", name: "さつまやとんとん箱根", category: "飲食", latitude: 35.267010, longitude: 139.012734,
+    description: "仙石原の黒豚とんかつ・豚しゃぶの店。鹿児島県産の六白黒豚を使った定食が中心で、宿泊エリアから車で向かいやすい昼食候補です。",
+    officialUrl: "https://satsumaya.com/store", openingHours: "11:00〜14:30／16:00〜20:00（料理L.O.19:30）", closedDays: "月曜（月曜が祝日の場合は翌火曜）", priceAdult: "昼 1,000〜1,999円／夜 2,000〜2,999円", priceJuniorHigh: "昼 1,000〜1,999円／夜 2,000〜2,999円（子ども向けメニューは要確認）", priceElementary: "昼 1,000〜1,999円／夜 2,000〜2,999円（子ども向けメニューは要確認）", stayMinutes: 75,
+    parkingAvailable: true, parkingSpaces: "6台スペースあり（掲載情報・現地案内を優先）", rainyDayFriendly: true, walkingLevel: 1, childFriendly: 4, juniorHighFriendly: 4,
+    crowdLevel: 2, crowdSource: "general", crowdUpdatedAt: "2026-08-07", crowdHint: "18席のため昼食ピークは席と駐車場が埋まりやすい", bestTime: "11時の開店直後または13時30分以降", tags: ["飲食店あり", "駐車場あり", "雨天対応", "子ども向け"], dataNote: "公式サイトで営業時間・定休日・住所を、掲載情報で予算・駐車6台を2026-08-07に確認。8月12日（水）・13日（木）は営業予定ですが、臨時変更は直前に電話・公式サイトで再確認してください。住所からの座標はジオコーディングによる概算です。", photoKind: "placeholder", reviewScore: "外部評価はリンク先で確認（新店のため固定点数は保存しません）", tripOpenDays: [1, 2], factCheckedAt: "2026-08-07"
+  },
+  {
     id: "sengokuhara-chaya", name: "仙石原茶屋", category: "飲食", latitude: 35.2745, longitude: 138.9973,
     description: "仙石原すすき草原近くの古民家カフェ。短い休憩や軽食を入れたいときに向き、仙石原エリア内で大きく移動せずに済みます。",
     officialUrl: "https://www.sengokubarachaya-hakone.com/", openingHours: "11:00〜17:30 L.O.17:00（営業カレンダーを要確認）", closedDays: "不定休（公式SNS・カレンダーで要確認）", priceAdult: "目安 1,000〜2,000円", stayMinutes: 45,

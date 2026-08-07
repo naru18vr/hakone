@@ -43,6 +43,12 @@ describe("観光地・食事処データ", () => {
       tripOpenDays: [],
       closedDays: expect.stringContaining("2026/5/7〜10/29全面休館"),
     });
+    expect(byId("satsumaya-ton-ton-hakone")).toMatchObject({
+      category: "飲食",
+      tripOpenDays: [1, 2],
+      parkingSpaces: expect.stringContaining("6台"),
+      officialUrl: "https://satsumaya.com/store",
+    });
   });
 
   it("変動する口コミ点数を固定値として保存しない", () => {

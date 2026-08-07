@@ -131,6 +131,10 @@ export type TravelConditions = {
   endDate: string;
   day1StartTime: string;
   day2StartTime: string;
+  /** 行きの列車名・区間は時刻表の記録として保存する（時刻表APIとは接続しない）。 */
+  outboundTrainService?: string;
+  outboundTrainOrigin?: string;
+  outboundTrainDestination?: string;
   outboundTrainDepartureTime: string;
   outboundTrainMinutes: number;
   arrivalPlace: string;

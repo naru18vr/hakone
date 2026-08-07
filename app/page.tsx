@@ -236,6 +236,11 @@ export default function Home() {
     if (!window.confirm("保存中の旅程を初期サンプルプランへ戻しますか？ この操作は元に戻せません。")) return;
     try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* 保存不可の環境では何もしない */ }
     loadPlan(initialPlan);
+    setConditions(defaultTravelConditions);
+    setReturnSettings(defaultReturnSettings);
+    setWeather("晴れ");
+    setCrowdMode("forecast");
+    setActiveFilters([]);
     setToast("初期サンプルプランに戻しました");
   };
   const clearItinerary = () => {
@@ -302,7 +307,8 @@ export default function Home() {
           </nav>
           <section className="card trip-card" id="trip-panel">
             <div className="section-heading"><div><span className="eyebrow">今回の旅</span><h2>旅行条件</h2></div><div className="trip-actions"><button className="text-button" onClick={saveTrip}>保存</button><button className="text-button" onClick={() => setShareOpen(true)}><Share2 size={14} /> 共有</button><button className="text-button" onClick={() => window.print()}><Printer size={14} /> 印刷</button><button className="text-button" onClick={() => { setToast("印刷画面で、プリンターとして「PDFに保存」を選択してください。"); window.print(); }}>PDF用画面</button><button className="text-button" onClick={resetPlan}><RotateCcw size={14} /> 初期化</button></div></div>
-            <div className="trip-facts"><span><MapPinned size={15} /> {conditions.arrivalPlace}・{conditions.day1StartTime}出発</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> {conditions.planPolicy}</span></div>
+            <div className="trip-facts"><span><MapPinned size={15} /> 初日旅程 {conditions.day1StartTime}開始・{conditions.arrivalPlace}</span><span>⌂ {hotelName}</span><span><CarFront size={15} /> {conditions.planPolicy}</span></div>
+            <div className="train-summary" aria-label="初日の行きの列車"><span>🚆 行きの電車</span><strong>{conditions.outboundTrainService || "列車名未設定"}</strong><b>{conditions.outboundTrainOrigin || "出発地未設定"} {conditions.outboundTrainDepartureTime} → {conditions.outboundTrainDestination || conditions.arrivalPlace} {formatEndTime(conditions.outboundTrainDepartureTime, conditions.outboundTrainMinutes)}</b><small>乗車 {conditions.outboundTrainMinutes}分・一般的な所要時間の概算</small></div>
             <label className="field-label">宿泊施設（仮地点）<input value={hotelName} onChange={(event) => setHotelName(event.target.value)} /></label>
             <details className="travel-condition-editor">
               <summary>日程・出発時刻・旅行条件を編集</summary>
@@ -311,6 +317,9 @@ export default function Home() {
                 <label>終了日<input type="date" value={conditions.endDate} min={conditions.startDate} onChange={(event) => setConditions((value) => ({ ...value, endDate: event.target.value }))} /></label>
                 <label>8/12 出発<input type="time" value={conditions.day1StartTime} onChange={(event) => setConditions((value) => ({ ...value, day1StartTime: event.target.value }))} /></label>
                 <label>8/13 出発<input type="time" value={conditions.day2StartTime} onChange={(event) => setConditions((value) => ({ ...value, day2StartTime: event.target.value }))} /></label>
+                <label>行きの列車<input value={conditions.outboundTrainService ?? ""} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainService: event.target.value }))} placeholder="例：はこね1号（EXE10）" /></label>
+                <label>乗車駅<input value={conditions.outboundTrainOrigin ?? ""} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainOrigin: event.target.value }))} placeholder="新宿" /></label>
+                <label>降車駅<input value={conditions.outboundTrainDestination ?? ""} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainDestination: event.target.value }))} placeholder="小田原" /></label>
                 <label>行きの電車 出発<input type="time" value={conditions.outboundTrainDepartureTime} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainDepartureTime: event.target.value }))} /></label>
                 <label>行きの電車 所要時間<input type="number" min={1} max={300} value={conditions.outboundTrainMinutes} onChange={(event) => setConditions((value) => ({ ...value, outboundTrainMinutes: Math.min(300, Math.max(1, Number(event.target.value) || 1)) }))} /></label>
                 <label>出発・到着地点<input value={conditions.arrivalPlace} onChange={(event) => setConditions((value) => ({ ...value, arrivalPlace: event.target.value }))} /></label>
@@ -320,7 +329,7 @@ export default function Home() {
                 <label>小学生<input type="number" min={0} max={20} value={conditions.elementaryStudents} onChange={(event) => setConditions((value) => ({ ...value, elementaryStudents: Math.max(0, Number(event.target.value) || 0) }))} /></label>
                 <label>計画方針<input value={conditions.planPolicy} onChange={(event) => setConditions((value) => ({ ...value, planPolicy: event.target.value }))} /></label>
               </div>
-              <small>行きの小田原到着見込み：{formatEndTime(conditions.outboundTrainDepartureTime, conditions.outboundTrainMinutes)}（時刻表未接続の概算）<br />{conditions.startDate}〜{conditions.endDate}・{partyLabel(conditions)}。出発時刻を変更すると、旅程の到着・出発時刻と帰京予測を再計算します。</small>
+              <small>行きの列車：{conditions.outboundTrainService || "列車名未設定"} ／ {conditions.outboundTrainOrigin || "出発地未設定"} {conditions.outboundTrainDepartureTime} → {conditions.outboundTrainDestination || conditions.arrivalPlace} {formatEndTime(conditions.outboundTrainDepartureTime, conditions.outboundTrainMinutes)}（乗車 {conditions.outboundTrainMinutes}分・概算）<br />{conditions.startDate}〜{conditions.endDate}・{partyLabel(conditions)}。出発時刻・所要時間を変更すると、初日の到着・出発時刻と帰京予測を再計算します。</small>
             </details>
             <div className="scenario-grid"><label>訪問時刻<select value={visitTime} onChange={(event) => setVisitTime(event.target.value)}><option>09:00</option><option>11:30</option><option>14:30</option><option>16:00</option></select></label><label>天候<select value={weather} onChange={(event) => setWeather(event.target.value as "晴れ" | "雨" | "くもり")}><option>晴れ</option><option>くもり</option><option>雨</option></select></label></div>
             <div className="mode-switch"><span>混雑データ</span><button className={crowdMode === "forecast" ? "active" : ""} onClick={() => setCrowdMode("forecast")}>予測</button><button className={crowdMode === "general" ? "active" : ""} onClick={() => setCrowdMode("general")}>一般傾向</button></div>
