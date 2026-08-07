@@ -170,7 +170,7 @@ export default function Home() {
   const tripSummary = calcTripSummary(day1, day2, spots, { day1: conditions.day1StartTime, day2: conditions.day2StartTime });
   const summary1 = tripSummary.day1;
   const summary2 = tripSummary.day2;
-  const stress = assessStress(day1, day2, spots);
+  const stress = assessStress(day1, day2, spots, { day1: conditions.day1StartTime, day2: conditions.day2StartTime });
   const loadScore = stress.score;
   const totalDistance = tripSummary.distanceKm;
   const totalDrive = tripSummary.predictedDriveMinutes;

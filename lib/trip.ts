@@ -132,8 +132,10 @@ export const getStressDescription = (label: StressResult["label"]) => ({
   "詰め込みすぎ": "予定の密度が高く、混雑時に帰着時刻が大きくずれるおそれがあります。訪問先の削減をおすすめします。",
 })[label];
 
-const dayStress = (items: ItineraryItem[], spots: Spot[], day: 1 | 2): Omit<StressResult, "days"> => {
-  const summary = calcDaySummary(items, spots, day === 1 ? "11:15" : "09:00");
+type StressStartTimes = { day1: string; day2: string };
+
+const dayStress = (items: ItineraryItem[], spots: Spot[], day: 1 | 2, startTimes: StressStartTimes): Omit<StressResult, "days"> => {
+  const summary = calcDaySummary(items, spots, day === 1 ? startTimes.day1 : startTimes.day2);
   const spotItems = items.filter((item) => item.type === "spot");
   const spotData = spotItems.map((item) => spots.find((spot) => spot.id === item.spotId)).filter((spot): spot is Spot => Boolean(spot));
   const highCrowd = spotData.filter((spot) => spot.crowdLevel >= 4).length;
@@ -171,9 +173,14 @@ const dayStress = (items: ItineraryItem[], spots: Spot[], day: 1 | 2): Omit<Stre
 };
 
 /** 日ごとのピークを重視し、宿泊によるリセット分を差し引いた比較用スコア。 */
-export const assessStress = (day1: ItineraryItem[], day2: ItineraryItem[], spots: Spot[]): StressResult => {
-  const first = dayStress(day1, spots, 1);
-  const second = dayStress(day2, spots, 2);
+export const assessStress = (
+  day1: ItineraryItem[],
+  day2: ItineraryItem[],
+  spots: Spot[],
+  startTimes: StressStartTimes = { day1: "11:15", day2: "09:00" },
+): StressResult => {
+  const first = dayStress(day1, spots, 1, startTimes);
+  const second = dayStress(day2, spots, 2, startTimes);
   const peak = Math.max(first.score, second.score);
   const lower = Math.min(first.score, second.score);
   const score = Math.min(100, Math.round(peak * 0.72 + lower * 0.18 + (first.score >= 55 && second.score >= 55 ? 5 : 0)));

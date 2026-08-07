@@ -179,6 +179,15 @@ describe("負荷スコア", () => {
     expect(result.days[1].label).toBe(getStressLabel(result.days[1].score));
     expect(result.days[2].label).toBe(getStressLabel(result.days[2].score));
   });
+
+  it("編集した初日の出発時刻を負荷内訳の終了予定へ反映する", () => {
+    const day1 = clonePlan().filter((item) => item.day === 1);
+    const day2 = clonePlan().filter((item) => item.day === 2);
+    const result = assessStress(day1, day2, spots, { day1: "09:55", day2: "09:00" });
+    expect(result.days[1].breakdown.find((item) => item.label === "営業時間の余裕")?.note).toMatch(/^終了予定 /);
+    expect(result.days[1].breakdown.find((item) => item.label === "営業時間の余裕")?.note)
+      .not.toBe(assessStress(day1, day2, spots).days[1].breakdown.find((item) => item.label === "営業時間の余裕")?.note);
+  });
 });
 
 describe("保存データ", () => {
